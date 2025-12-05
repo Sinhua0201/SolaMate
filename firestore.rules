@@ -1,0 +1,29 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Profiles collection - allow read for all, write for authenticated users
+    match /profiles/{profileId} {
+      allow read: if true;
+      allow write: if true; // For development - change this in production!
+    }
+    
+    // Chat messages collection
+    match /messages/{messageId} {
+      allow read: if true;
+      allow write: if true; // For development - change this in production!
+    }
+    
+    // Notifications collection
+    match /notifications/{notificationId} {
+      allow read: if true;
+      allow write: if true; // For development - change this in production!
+    }
+    
+    // Default deny all other collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

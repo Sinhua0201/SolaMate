@@ -1,0 +1,33 @@
+{
+  "name": "SolaMate",
+  "short_name": "SolaMate",
+  "description": "SolaMate - Crypto transactions with simple commands on Solana blockchain.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "orientation": "portrait",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "any",
+      "type": "image/x-icon"
+    }
+  ],
+  "categories": ["finance", "utilities"],
+  "shortcuts": [
+    {
+      "name": "Send Transaction",
+      "short_name": "Send",
+      "description": "Send SOL with SolaMate",
+      "url": "/?action=send",
+      "icons": [
+        {
+          "src": "/favicon.ico",
+          "sizes": "any"
+        }
+      ]
+    }
+  ]
+}
