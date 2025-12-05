@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-declare_id!("GNz2osDczKfNJzWCRQRnTTLXoA92iY1QNmnDmt1Qo9c7");
+declare_id!("6mtS4ULqE9MgKnFcwyZcfg8fjwWXrwgwg5W9WKdMpb1j");
 
 #[program]
 pub mod solamate_program {
@@ -35,25 +35,26 @@ pub mod solamate_program {
     }
 
     /// 发送好友请求
-    pub fn send_friend_request(ctx: Context<SendFriendRequest>) -> Result<()> {
+    pub fn send_friend_request(ctx: Context<SendFriendRequest>, user_a: Pubkey, user_b: Pubkey) -> Result<()> {
         let friendship = &mut ctx.accounts.friendship;
-        let user_a = ctx.accounts.user.key();
-        let user_b = ctx.accounts.friend.key();
+        let sender = ctx.accounts.user.key();
+        let friend = ctx.accounts.friend.key();
         
-        // 确保 user_a < user_b (字母序)
-        let (min_user, max_user) = if user_a < user_b {
-            (user_a, user_b)
-        } else {
-            (user_b, user_a)
-        };
+        // 验证传入的排序后的 keys 匹配实际用户
+        require!(user_a < user_b, ErrorCode::InvalidKeyOrder);
+        require!(
+            (sender == user_a && friend == user_b) || (sender == user_b && friend == user_a),
+            ErrorCode::InvalidKeyOrder
+        );
         
-        friendship.user_a = min_user;
-        friendship.user_b = max_user;
+        friendship.user_a = user_a;
+        friendship.user_b = user_b;
+        friendship.requester = sender; // 记录发送者
         friendship.status = FriendshipStatus::Pending;
         friendship.created_at = Clock::get()?.unix_timestamp;
         friendship.bump = ctx.bumps.friendship;
         
-        msg!("Friend request sent from {} to {}", user_a, user_b);
+        msg!("Friend request sent from {} to {}", sender, friend);
         Ok(())
     }
 
@@ -329,13 +330,14 @@ impl UserProfile {
 pub struct Friendship {
     pub user_a: Pubkey,         // 32
     pub user_b: Pubkey,         // 32
+    pub requester: Pubkey,      // 32 - 记录谁发送的请求
     pub status: FriendshipStatus, // 1
     pub created_at: i64,        // 8
     pub bump: u8,               // 1
 }
 
 impl Friendship {
-    pub const LEN: usize = 8 + 32 + 32 + 1 + 8 + 1; // 82 bytes
+    pub const LEN: usize = 8 + 32 + 32 + 32 + 1 + 8 + 1; // 114 bytes
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq)]
@@ -464,13 +466,13 @@ pub struct SelectPet<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction()]
+#[instruction(user_a: Pubkey, user_b: Pubkey)]
 pub struct SendFriendRequest<'info> {
     #[account(
         init,
         payer = user,
         space = Friendship::LEN,
-        seeds = [b"friendship", user.key().as_ref(), friend.key().as_ref()],
+        seeds = [b"friendship", user_a.as_ref(), user_b.as_ref()],
         bump
     )]
     pub friendship: Account<'info, Friendship>,
@@ -741,4 +743,7 @@ pub enum ErrorCode {
     
     #[msg("Unauthorized: You are not the owner")]
     Unauthorized,
+    
+    #[msg("Keys must be provided in sorted order")]
+    InvalidKeyOrder,
 }

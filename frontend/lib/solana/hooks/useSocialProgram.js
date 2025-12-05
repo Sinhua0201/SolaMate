@@ -5,7 +5,7 @@
 
 import { useState } from 'react';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
-import { SystemProgram } from '@solana/web3.js';
+import { SystemProgram, PublicKey } from '@solana/web3.js';
 import { getProgram } from '../anchorSetup';
 import { 
   getUserProfilePDA, 
@@ -141,10 +141,23 @@ export function useSendFriendRequest() {
         console.log('Your profile initialized:', initTx);
       }
 
-      const [friendshipPDA] = getFriendshipPDA(publicKey, friendPublicKey);
+      // 排序 keys（合约要求排序后的 keys）
+      const [userA, userB] = publicKey.toString() < friendPublicKey.toString()
+        ? [publicKey, friendPublicKey]
+        : [friendPublicKey, publicKey];
+      
+      // 使用排序后的 keys 计算 PDA
+      const [friendshipPDA] = PublicKey.findProgramAddressSync(
+        [
+          Buffer.from('friendship'),
+          userA.toBuffer(),
+          userB.toBuffer()
+        ],
+        program.programId
+      );
 
       const tx = await program.methods
-        .sendFriendRequest()
+        .sendFriendRequest(userA, userB)
         .accounts({
           friendship: friendshipPDA,
           user: publicKey,
@@ -186,7 +199,16 @@ export function useAcceptFriendRequest() {
 
     try {
       const program = getProgram(wallet);
-      const [friendshipPDA] = getFriendshipPDA(publicKey, friendPublicKey);
+      
+      // 使用排序后的 keys 计算 PDA（与合约一致）
+      const [userA, userB] = publicKey.toString() < friendPublicKey.toString()
+        ? [publicKey, friendPublicKey]
+        : [friendPublicKey, publicKey];
+      
+      const [friendshipPDA] = PublicKey.findProgramAddressSync(
+        [Buffer.from('friendship'), userA.toBuffer(), userB.toBuffer()],
+        program.programId
+      );
       
       // 获取 friendship 账户数据
       const friendshipAccount = await program.account.friendship.fetch(friendshipPDA);

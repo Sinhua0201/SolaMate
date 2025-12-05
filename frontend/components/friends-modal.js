@@ -94,8 +94,12 @@ export function FriendsModal({ isOpen, onClose }) {
           }
           
           if (status.pending) {
-            // 只显示发给我的待处理请求
-            if (isUserB) {
+            // 使用 requester 字段判断谁是发送者
+            const requester = friendship.account.requester
+            const isSender = requester.toString() === userAddress
+            
+            // 只显示别人发给我的待处理请求（我不是发送者）
+            if (!isSender) {
               pending.push(friendData)
             }
           } else {
