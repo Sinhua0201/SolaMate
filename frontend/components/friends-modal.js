@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/router"
 import { useWallet } from '@solana/wallet-adapter-react'
 import { PublicKey } from '@solana/web3.js'
@@ -118,12 +118,27 @@ export function FriendsModal({ isOpen, onClose }) {
     }
   }
 
-  // 获取用户档案
+  // 简单的内存缓存
+  const profileCache = useRef({})
+  
+  // 获取用户档案（带缓存）
   const fetchProfile = async (walletAddress) => {
+    // 检查缓存
+    if (profileCache.current[walletAddress]) {
+      return profileCache.current[walletAddress]
+    }
+    
     try {
       const response = await fetch(`/api/profile?walletAddress=${walletAddress}`)
       const data = await response.json()
-      return data.success && data.exists ? data.profile : null
+      const profile = data.success && data.exists ? data.profile : null
+      
+      // 存入缓存
+      if (profile) {
+        profileCache.current[walletAddress] = profile
+      }
+      
+      return profile
     } catch (err) {
       console.error('Error fetching profile:', err)
       return null

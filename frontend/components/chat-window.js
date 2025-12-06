@@ -431,6 +431,34 @@ export default function ChatWindow({ selectedChat }) {
       
       // 发送成功通知给对方（使用 selectedChat.id 而不是 friend.address）
       await sendMessage(selectedChat.id, `TRANSFER_SUCCESS:${amount}:${signature}:${publicKey.toString()}`);
+      
+      // 记录消费到区块链（使用选择的分类）
+      try {
+        const categoryMap = {
+          'dining': ExpenseCategory.Dining,
+          'shopping': ExpenseCategory.Shopping,
+          'entertainment': ExpenseCategory.Entertainment,
+          'travel': ExpenseCategory.Travel,
+          'gifts': ExpenseCategory.Gifts,
+          'bills': ExpenseCategory.Bills,
+          'other': ExpenseCategory.Other,
+        };
+        
+        const expenseResult = await recordExpense({
+          recipientAddress: friend.address,
+          amount: lamports,
+          category: categoryMap[paymentCategory] || ExpenseCategory.Other,
+          description: `Transfer to @${friend.username}`,
+          txSignature: signature,
+        });
+        
+        if (expenseResult.success) {
+          console.log('Expense recorded to blockchain:', expenseResult.signature);
+        }
+      } catch (expenseErr) {
+        console.error('Failed to record expense:', expenseErr);
+        // 不影响转账成功的显示
+      }
     } catch (err) {
       console.error('Transfer error:', err);
       
@@ -447,7 +475,7 @@ export default function ChatWindow({ selectedChat }) {
     }
   };
 
-  const handlePaymentSubmit = () => {
+  const handlePaymentSubmit = async () => {
     if (!paymentAmount || parseFloat(paymentAmount) <= 0) {
       alert('Please enter a valid amount');
       return;
@@ -460,13 +488,19 @@ export default function ChatWindow({ selectedChat }) {
     };
 
     if (paymentType === 'send') {
-      // 发送 SOL - 包含 expense 信息
-      const categoryName = EXPENSE_CATEGORIES.find(c => c.id === paymentCategory)?.name || 'Other';
-      const expenseData = {
-        description: `${categoryName} - Payment to @${friend.username}`,
-        category: paymentCategory,
-      };
-      handleTransferRequest(paymentAmount, friend, messages, expenseData);
+      // 发送 SOL - 直接执行转账
+      if (selectedChat.type === 'friend') {
+        // 好友聊天 - 直接转账，不需要确认
+        await executeTransferDirect(paymentAmount, friend);
+      } else {
+        // AI 聊天 - 显示确认消息
+        const categoryName = EXPENSE_CATEGORIES.find(c => c.id === paymentCategory)?.name || 'Other';
+        const expenseData = {
+          description: `${categoryName} - Payment to @${friend.username}`,
+          category: paymentCategory,
+        };
+        handleTransferRequest(paymentAmount, friend, messages, expenseData);
+      }
     } else {
       // 请求 SOL - 发送带有特殊标记的消息
       const requestContent = `PAYMENT_REQUEST:${paymentAmount}:${publicKey.toString()}`;
@@ -541,6 +575,23 @@ export default function ChatWindow({ selectedChat }) {
         localStorage.setItem('ai_messages', JSON.stringify(updated));
         return updated;
       });
+      
+      // 记录消费到区块链
+      try {
+        const expenseResult = await recordExpense({
+          recipientAddress: friend.address,
+          amount: lamports,
+          category: ExpenseCategory.Other,
+          description: `AI Transfer to @${friend.username}`,
+          txSignature: signature,
+        });
+        
+        if (expenseResult.success) {
+          console.log('Expense recorded to blockchain:', expenseResult.signature);
+        }
+      } catch (expenseErr) {
+        console.error('Failed to record expense:', expenseErr);
+      }
     } catch (err) {
       console.error('Transfer error:', err);
       

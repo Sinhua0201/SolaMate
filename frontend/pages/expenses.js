@@ -369,6 +369,8 @@ export default function ExpensesPage() {
 }
 
 function PieChart({ data }) {
+  const [hoveredIndex, setHoveredIndex] = useState(null);
+  
   if (!data || data.length === 0) {
     return (
       <div className="w-full aspect-square flex items-center justify-center bg-neutral-800 rounded-lg">
@@ -379,48 +381,78 @@ function PieChart({ data }) {
 
   const total = data.reduce((sum, item) => sum + item.value, 0);
   let currentAngle = 0;
+  
+  // 计算每个扇形的路径和角度
+  const slices = data.map((item, index) => {
+    const percentage = item.value / total;
+    const angle = percentage * 360;
+    const startAngle = currentAngle;
+    const endAngle = currentAngle + angle;
+    
+    const x1 = 100 + 90 * Math.cos((startAngle - 90) * Math.PI / 180);
+    const y1 = 100 + 90 * Math.sin((startAngle - 90) * Math.PI / 180);
+    const x2 = 100 + 90 * Math.cos((endAngle - 90) * Math.PI / 180);
+    const y2 = 100 + 90 * Math.sin((endAngle - 90) * Math.PI / 180);
+    
+    const largeArc = angle > 180 ? 1 : 0;
+    const path = `M 100 100 L ${x1} ${y1} A 90 90 0 ${largeArc} 1 ${x2} ${y2} Z`;
+    
+    currentAngle = endAngle;
+    
+    return { ...item, path, percentage, index };
+  });
+  
+  const hoveredItem = hoveredIndex !== null ? slices[hoveredIndex] : null;
 
   return (
     <div className="relative w-full aspect-square">
       <svg viewBox="0 0 200 200" className="w-full h-full">
-        {data.map((item, index) => {
-          const percentage = item.value / total;
-          const angle = percentage * 360;
-          const startAngle = currentAngle;
-          const endAngle = currentAngle + angle;
-          
-          const x1 = 100 + 90 * Math.cos((startAngle - 90) * Math.PI / 180);
-          const y1 = 100 + 90 * Math.sin((startAngle - 90) * Math.PI / 180);
-          const x2 = 100 + 90 * Math.cos((endAngle - 90) * Math.PI / 180);
-          const y2 = 100 + 90 * Math.sin((endAngle - 90) * Math.PI / 180);
-          
-          const largeArc = angle > 180 ? 1 : 0;
-          const path = `M 100 100 L ${x1} ${y1} A 90 90 0 ${largeArc} 1 ${x2} ${y2} Z`;
-          
-          currentAngle = endAngle;
-          
-          return (
-            <path
-              key={index}
-              d={path}
-              fill={item.color}
-              stroke="#171717"
-              strokeWidth="2"
-            />
-          );
-        })}
+        {slices.map((slice) => (
+          <path
+            key={slice.index}
+            d={slice.path}
+            fill={slice.color}
+            stroke="#171717"
+            strokeWidth="2"
+            className="cursor-pointer transition-all duration-200"
+            style={{
+              transform: hoveredIndex === slice.index ? 'scale(1.05)' : 'scale(1)',
+              transformOrigin: 'center',
+              opacity: hoveredIndex !== null && hoveredIndex !== slice.index ? 0.5 : 1,
+            }}
+            onMouseEnter={() => setHoveredIndex(slice.index)}
+            onMouseLeave={() => setHoveredIndex(null)}
+          />
+        ))}
         
         {/* Center circle */}
         <circle cx="100" cy="100" r="50" fill="#171717" />
-        <text x="100" y="95" textAnchor="middle" className="fill-white text-xs font-bold">
-          Total
-        </text>
-        <text x="100" y="110" textAnchor="middle" className="fill-purple-400 text-sm font-bold">
-          {(total / 1e9).toFixed(2)}
-        </text>
-        <text x="100" y="122" textAnchor="middle" className="fill-neutral-400 text-xs">
-          SOL
-        </text>
+        
+        {hoveredItem ? (
+          <>
+            <text x="100" y="90" textAnchor="middle" className="fill-white text-xs font-bold">
+              {hoveredItem.category}
+            </text>
+            <text x="100" y="108" textAnchor="middle" className="fill-purple-400 text-sm font-bold">
+              {(hoveredItem.value / 1e9).toFixed(2)} SOL
+            </text>
+            <text x="100" y="122" textAnchor="middle" className="fill-neutral-400 text-xs">
+              {(hoveredItem.percentage * 100).toFixed(1)}%
+            </text>
+          </>
+        ) : (
+          <>
+            <text x="100" y="95" textAnchor="middle" className="fill-white text-xs font-bold">
+              Total
+            </text>
+            <text x="100" y="110" textAnchor="middle" className="fill-purple-400 text-sm font-bold">
+              {(total / 1e9).toFixed(2)}
+            </text>
+            <text x="100" y="122" textAnchor="middle" className="fill-neutral-400 text-xs">
+              SOL
+            </text>
+          </>
+        )}
       </svg>
     </div>
   );

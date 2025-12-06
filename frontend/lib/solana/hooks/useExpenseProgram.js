@@ -6,6 +6,7 @@
 import { useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { SystemProgram, PublicKey } from '@solana/web3.js';
+import { BN } from '@coral-xyz/anchor';
 import { getProgram } from '../anchorSetup';
 import { getExpenseStatsPDA, getExpenseRecordPDA } from '../pdaHelpers';
 
@@ -114,10 +115,13 @@ export function useRecordExpense() {
       const [expenseRecordPDA] = getExpenseRecordPDA(publicKey, recordIndex);
       const recipientPubkey = new PublicKey(recipientAddress);
 
+      // 将 amount 转换为 BN 类型
+      const amountBN = new BN(amount);
+      
       // 构建交易
       const tx = await program.methods
         .recordExpense(
-          amount,
+          amountBN,
           category,
           description,
           txSignature

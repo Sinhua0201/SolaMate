@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Search, Bot, User, MessageCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -60,11 +60,26 @@ export default function ChatSidebar({ selectedChat, onSelectChat }) {
     }
   };
 
+  // 简单的内存缓存
+  const profileCache = useRef({});
+  
   const fetchProfile = async (walletAddress) => {
+    // 检查缓存
+    if (profileCache.current[walletAddress]) {
+      return profileCache.current[walletAddress];
+    }
+    
     try {
       const response = await fetch(`/api/profile?walletAddress=${walletAddress}`);
       const data = await response.json();
-      return data.success && data.exists ? data.profile : null;
+      const profile = data.success && data.exists ? data.profile : null;
+      
+      // 存入缓存
+      if (profile) {
+        profileCache.current[walletAddress] = profile;
+      }
+      
+      return profile;
     } catch (err) {
       return null;
     }
