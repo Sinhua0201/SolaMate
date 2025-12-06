@@ -827,7 +827,7 @@ export default function ChatWindow({ selectedChat }) {
 
         {selectedChat?.type === 'ai' && (
           <div className="mb-2 text-xs text-neutral-500">
-            💡 Try: "send sol 0.1 to @username"
+            💡 Try: &quot;send sol 0.1 to @username&quot;
           </div>
         )}
 
