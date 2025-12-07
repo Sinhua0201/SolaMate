@@ -59,7 +59,7 @@ export function useInitializeExpenseStats() {
 
       // 发送交易
       const signature = await sendTransaction(tx, program.provider.connection);
-      
+
       // 确认交易
       await program.provider.connection.confirmTransaction({
         signature,
@@ -107,17 +107,37 @@ export function useRecordExpense() {
     try {
       const program = getProgram(wallet);
       const [expenseStatsPDA] = getExpenseStatsPDA(publicKey);
-      
+
+      // 检查账户是否存在，如果不存在则先初始化
+      let stats = await program.account.expenseStats.fetchNullable(expenseStatsPDA);
+
+      if (!stats) {
+        console.log('ExpenseStats account does not exist, initializing...');
+        // 先初始化账户
+        const initTx = await program.methods
+          .initializeExpenseStats()
+          .accounts({
+            expenseStats: expenseStatsPDA,
+            user: publicKey,
+            systemProgram: SystemProgram.programId,
+          })
+          .rpc();
+
+        console.log('ExpenseStats initialized:', initTx);
+
+        // 重新获取
+        stats = await program.account.expenseStats.fetch(expenseStatsPDA);
+      }
+
       // 获取当前记录数量
-      const stats = await program.account.expenseStats.fetch(expenseStatsPDA);
       const recordIndex = stats.recordCount;
-      
+
       const [expenseRecordPDA] = getExpenseRecordPDA(publicKey, recordIndex);
       const recipientPubkey = new PublicKey(recipientAddress);
 
       // 将 amount 转换为 BN 类型
       const amountBN = new BN(amount);
-      
+
       // 构建交易
       const tx = await program.methods
         .recordExpense(
@@ -143,7 +163,7 @@ export function useRecordExpense() {
 
       // 发送交易
       const signature = await sendTransaction(tx, program.provider.connection);
-      
+
       // 确认交易
       await program.provider.connection.confirmTransaction({
         signature,

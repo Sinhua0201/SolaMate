@@ -2,6 +2,7 @@ import "@/styles/globals.css";
 import { SolanaWalletProvider } from "@/components/solana-wallet-provider";
 import { NotificationProvider } from "@/components/notification-toast";
 import { ProfileProvider } from "@/components/profile-provider";
+import { ExpenseOnboardingModal } from "@/components/expense-onboarding-modal";
 
 /**
  * Main App Component
@@ -13,6 +14,7 @@ export default function App({ Component, pageProps }) {
       <ProfileProvider>
         <NotificationProvider>
           <Component {...pageProps} />
+          <ExpenseOnboardingModal />
         </NotificationProvider>
       </ProfileProvider>
     </SolanaWalletProvider>

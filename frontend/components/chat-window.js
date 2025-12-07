@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { Send, Bot, User, Loader2 } from 'lucide-react';
+import { Send, Bot, User, Loader2, Mic, MicOff } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -20,6 +20,8 @@ export default function ChatWindow({ selectedChat }) {
   const [paymentType, setPaymentType] = useState(null); // 'send' or 'request'
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentCategory, setPaymentCategory] = useState('other');
+  const [isListening, setIsListening] = useState(false);
+  const [voiceError, setVoiceError] = useState(null);
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -54,22 +56,22 @@ export default function ChatWindow({ selectedChat }) {
     try {
       const { getProgram } = await import('@/lib/solana/anchorSetup');
       const program = getProgram({ publicKey });
-      
+
       const friendships = await program.account.friendship.all();
       const acceptedFriends = [];
-      
+
       for (const friendship of friendships) {
         const { userA, userB, status } = friendship.account;
-        
+
         if (status.accepted) {
           const isUserA = userA.toString() === publicKey.toString();
           const isUserB = userB.toString() === publicKey.toString();
-          
+
           if (isUserA || isUserB) {
             const friendAddr = isUserA ? userB.toString() : userA.toString();
             const response = await fetch(`/api/profile?walletAddress=${friendAddr}`);
             const data = await response.json();
-            
+
             if (data.success && data.exists) {
               acceptedFriends.push({
                 address: friendAddr,
@@ -80,7 +82,7 @@ export default function ChatWindow({ selectedChat }) {
           }
         }
       }
-      
+
       setFriends(acceptedFriends);
     } catch (err) {
       console.error('Error loading friends:', err);
@@ -108,18 +110,18 @@ export default function ChatWindow({ selectedChat }) {
         const { getProgram } = await import('@/lib/solana/anchorSetup');
         const { getChatRoomPDA, getMessagePDA } = await import('@/lib/solana/pdaHelpers');
         const { PublicKey } = await import('@solana/web3.js');
-        
+
         const program = getProgram({ publicKey });
         const friendPubkey = new PublicKey(selectedChat.id);
         const [chatRoomPDA] = getChatRoomPDA(publicKey, friendPubkey);
-        
+
         // 检查聊天室是否存在
         const chatRoom = await program.account.chatRoom.fetchNullable(chatRoomPDA);
         if (!chatRoom) {
           setMessages([]);
           return;
         }
-        
+
         // 获取所有消息
         const allMessages = await program.account.message.all([
           {
@@ -129,13 +131,13 @@ export default function ChatWindow({ selectedChat }) {
             },
           },
         ]);
-        
+
         const formattedMessages = allMessages
           .map(m => {
             const content = m.account.content;
             const sender = m.account.sender.toString();
             const isMine = sender === publicKey.toString();
-            
+
             // 检查是否是 Payment Request
             if (content.startsWith('PAYMENT_REQUEST:')) {
               const [, amount, requester] = content.split(':');
@@ -152,7 +154,7 @@ export default function ChatWindow({ selectedChat }) {
                 },
               };
             }
-            
+
             // 检查是否是转账成功通知
             if (content.startsWith('TRANSFER_SUCCESS:')) {
               const [, amount, signature, senderAddr] = content.split(':');
@@ -165,7 +167,7 @@ export default function ChatWindow({ selectedChat }) {
                 explorerLink: `https://explorer.solana.com/tx/${signature}?cluster=devnet`,
               };
             }
-            
+
             return {
               id: m.publicKey.toString(),
               content,
@@ -175,7 +177,7 @@ export default function ChatWindow({ selectedChat }) {
             };
           })
           .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-        
+
         setMessages(formattedMessages);
       }
     } catch (err) {
@@ -184,6 +186,70 @@ export default function ChatWindow({ selectedChat }) {
     } finally {
       setIsLoadingMessages(false);
     }
+  };
+
+  // 解析转账指令 - 支持智能分类检测
+  const parseTransferCommand = (text) => {
+    const patterns = [
+      /(?:send|transfer|pay)\s+(?:sol\s+)?(\d+\.?\d*)\s+(?:sol\s+)?(?:to\s+)?@?(\w+)(?:\s+for\s+(.+))?/i,
+      /(?:give|送|转)\s+@?(\w+)\s+(\d+\.?\d*)\s+sol(?:\s+(.+))?/i,
+    ];
+
+    for (const pattern of patterns) {
+      const match = text.match(pattern);
+      if (match) {
+        const result = {
+          amount: parseFloat(match[1]),
+          recipient: match[2],
+          reason: match[3] || 'Transfer',
+          isValid: true,
+          category: null,
+        };
+
+        // 检测文本中是否提到了分类
+        const lowerText = text.toLowerCase();
+        const categoryKeywords = {
+          'dining': ['dining', 'food', 'restaurant', 'lunch', 'dinner', 'breakfast', 'coffee', 'meal', 'eat', '吃饭', '餐饮', '咖啡'],
+          'shopping': ['shopping', 'shop', 'buy', 'purchase', 'store', '购物', '买'],
+          'entertainment': ['entertainment', 'movie', 'game', 'concert', 'show', 'fun', '娱乐', '电影', '游戏'],
+          'travel': ['travel', 'trip', 'flight', 'hotel', 'vacation', 'tour', '旅行', '旅游', '机票'],
+          'gifts': ['gift', 'present', 'birthday', 'celebration', '礼物', '生日'],
+          'bills': ['bill', 'rent', 'utility', 'payment', 'fee', '账单', '租金'],
+          'other': ['other', 'misc', 'miscellaneous', '其他'],
+        };
+
+        // 检查是否匹配任何分类关键词
+        for (const [category, keywords] of Object.entries(categoryKeywords)) {
+          if (keywords.some(keyword => lowerText.includes(keyword))) {
+            result.category = category;
+            break;
+          }
+        }
+
+        return result;
+      }
+    }
+
+    return { isValid: false };
+  };
+
+  // 处理分类选择
+  const handleCategorySelect = (category, transferData) => {
+    const categoryInfo = EXPENSE_CATEGORIES.find(c => c.id === category);
+    const confirmMsg = {
+      id: Date.now(),
+      content: `✅ Category Selected: ${categoryInfo?.emoji} ${categoryInfo?.name}\n\n💰 Transfer Summary\n\nAmount: ${transferData.amount} SOL\nTo: @${transferData.friend.username} (${transferData.friend.displayName})\nCategory: ${categoryInfo?.name}\nReason: ${transferData.reason}\n\nReady to transfer?`,
+      sender: 'ai',
+      timestamp: new Date().toISOString(),
+      isMine: false,
+      isConfirmation: true,
+      transferData: { ...transferData, category },
+    };
+
+    const currentMessages = JSON.parse(localStorage.getItem('ai_messages') || '[]');
+    const updatedMessages = [...currentMessages, confirmMsg];
+    setMessages(updatedMessages);
+    localStorage.setItem('ai_messages', JSON.stringify(updatedMessages));
   };
 
   const handleSendMessage = async () => {
@@ -205,24 +271,51 @@ export default function ChatWindow({ selectedChat }) {
       const userInput = inputMessage;
       setInputMessage('');
 
-      // 检查是否是转账命令
-      const sendSolMatch = userInput.match(/send\s+sol\s+([\d.]+)\s+(?:to\s+)?@?(\w+)/i);
-      
-      if (sendSolMatch) {
-        const [, amount, username] = sendSolMatch;
-        
+      // 检查是否是转账命令 - 使用新的解析逻辑
+      const parsed = parseTransferCommand(userInput);
+
+      if (parsed.isValid) {
         // 查找好友
-        const friend = friends.find(f => f.username.toLowerCase() === username.toLowerCase());
-        
+        const friend = friends.find(f => f.username.toLowerCase() === parsed.recipient.toLowerCase());
+
         if (friend) {
-          // 显示确认对话框
-          handleTransferRequest(amount, friend, aiMessages);
+          // 检查是否已经检测到分类
+          if (parsed.category) {
+            // 已有分类，直接显示确认消息
+            const categoryInfo = EXPENSE_CATEGORIES.find(c => c.id === parsed.category);
+            const confirmMsg = {
+              id: Date.now() + 1,
+              content: `💰 Transfer Request\n\nAmount: ${parsed.amount} SOL\nTo: @${friend.username} (${friend.displayName})\nCategory: ${categoryInfo?.emoji} ${categoryInfo?.name}\nReason: ${parsed.reason}\n\nReady to transfer?`,
+              sender: 'ai',
+              timestamp: new Date().toISOString(),
+              isMine: false,
+              isConfirmation: true,
+              transferData: { amount: parsed.amount, friend, reason: parsed.reason, category: parsed.category },
+            };
+            const updatedMessages = [...aiMessages, confirmMsg];
+            setMessages(updatedMessages);
+            localStorage.setItem('ai_messages', JSON.stringify(updatedMessages));
+          } else {
+            // 没有分类，显示分类选择消息
+            const categoryMsg = {
+              id: Date.now() + 1,
+              content: `💰 Transfer Request\n\nAmount: ${parsed.amount} SOL\nTo: @${friend.username} (${friend.displayName})\n\nPlease select a category for this expense:`,
+              sender: 'ai',
+              timestamp: new Date().toISOString(),
+              isMine: false,
+              showCategorySelection: true,
+              transferData: { amount: parsed.amount, friend, reason: parsed.reason },
+            };
+            const updatedMessages = [...aiMessages, categoryMsg];
+            setMessages(updatedMessages);
+            localStorage.setItem('ai_messages', JSON.stringify(updatedMessages));
+          }
         } else {
           // 好友不存在
           setTimeout(() => {
             const aiReply = {
               id: Date.now() + 1,
-              content: `❌ User @${username} not found in your friends list.\n\nMake sure they are your friend first!`,
+              content: `❌ User @${parsed.recipient} not found in your friends list.\n\nMake sure they are your friend first!`,
               sender: 'ai',
               timestamp: new Date().toISOString(),
               isMine: false,
@@ -237,7 +330,7 @@ export default function ChatWindow({ selectedChat }) {
         setTimeout(() => {
           let aiResponse = '';
           const lowerInput = userInput.toLowerCase();
-          
+
           // 简单的关键词匹配回复
           if (lowerInput.includes('hello') || lowerInput.includes('hi') || lowerInput.includes('hey')) {
             aiResponse = 'Hello! 👋 I\'m your SolaMate AI assistant. I can help you:\n\n• Send SOL to friends (try: "send sol 0.1 to @username")\n• Chat and answer questions\n• Manage your crypto activities\n\nHow can I help you today?';
@@ -262,7 +355,7 @@ export default function ChatWindow({ selectedChat }) {
             ];
             aiResponse = responses[Math.floor(Math.random() * responses.length)];
           }
-          
+
           const aiReply = {
             id: Date.now() + 1,
             content: aiResponse,
@@ -279,7 +372,7 @@ export default function ChatWindow({ selectedChat }) {
       // 好友聊天 - 发送到区块链
       try {
         const result = await sendMessage(selectedChat.id, inputMessage);
-        
+
         if (result.success) {
           setMessages([...messages, newMessage]);
           setInputMessage('');
@@ -302,7 +395,7 @@ export default function ChatWindow({ selectedChat }) {
     if (lastAtIndex !== -1 && selectedChat?.type === 'ai') {
       const textAfterAt = value.slice(lastAtIndex + 1);
       const hasSpace = textAfterAt.includes(' ');
-      
+
       if (!hasSpace) {
         setMentionSearch(textAfterAt.toLowerCase());
         setShowMentions(true);
@@ -331,6 +424,55 @@ export default function ChatWindow({ selectedChat }) {
     }
   };
 
+  // 语音输入处理
+  const handleVoiceInput = () => {
+    // 检查浏览器支持
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      setVoiceError('Your browser does not support voice input');
+      setTimeout(() => setVoiceError(null), 3000);
+      return;
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+
+    // 配置
+    recognition.lang = 'en-US'; // 可以改成 'zh-CN' 支持中文
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    setIsListening(true);
+    setVoiceError(null);
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      console.log('Voice input:', transcript);
+      setInputMessage(transcript);
+      setIsListening(false);
+    };
+
+    recognition.onerror = (event) => {
+      console.error('Speech recognition error:', event.error);
+      setVoiceError(`Error: ${event.error}`);
+      setIsListening(false);
+      setTimeout(() => setVoiceError(null), 3000);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    try {
+      recognition.start();
+    } catch (err) {
+      console.error('Failed to start recognition:', err);
+      setVoiceError('Failed to start voice input');
+      setIsListening(false);
+      setTimeout(() => setVoiceError(null), 3000);
+    }
+  };
+
   const filteredFriends = friends.filter(f =>
     f.username.toLowerCase().includes(mentionSearch) ||
     f.displayName.toLowerCase().includes(mentionSearch)
@@ -347,7 +489,7 @@ export default function ChatWindow({ selectedChat }) {
       isConfirmation: true,
       transferData: { amount, friend, expenseData },
     };
-    
+
     const updatedMessages = [...currentMessages, confirmMsg];
     setMessages(updatedMessages);
     localStorage.setItem('ai_messages', JSON.stringify(updatedMessages));
@@ -367,7 +509,7 @@ export default function ChatWindow({ selectedChat }) {
         username: selectedChat.username,
         displayName: selectedChat.name,
       };
-      
+
       // 直接执行转账，不显示确认对话框
       await executeTransferDirect(amount, friend);
     } else {
@@ -387,7 +529,7 @@ export default function ChatWindow({ selectedChat }) {
   const executeTransferDirect = async (amount, friend) => {
     try {
       const { Connection, PublicKey, SystemProgram, Transaction, LAMPORTS_PER_SOL } = await import('@solana/web3.js');
-      
+
       // 显示处理中消息
       const processingMsg = {
         id: Date.now(),
@@ -413,7 +555,7 @@ export default function ChatWindow({ selectedChat }) {
 
       // 发送交易
       const signature = await walletSendTransaction(transaction, connection);
-      
+
       // 等待确认
       await connection.confirmTransaction(signature, 'confirmed');
 
@@ -426,12 +568,12 @@ export default function ChatWindow({ selectedChat }) {
         isMine: true,
         explorerLink: `https://explorer.solana.com/tx/${signature}?cluster=devnet`,
       };
-      
+
       setMessages(prev => [...prev.filter(m => m.id !== processingMsg.id), successMsg]);
-      
+
       // 发送成功通知给对方（使用 selectedChat.id 而不是 friend.address）
       await sendMessage(selectedChat.id, `TRANSFER_SUCCESS:${amount}:${signature}:${publicKey.toString()}`);
-      
+
       // 记录消费到区块链（使用选择的分类）
       try {
         const categoryMap = {
@@ -443,7 +585,7 @@ export default function ChatWindow({ selectedChat }) {
           'bills': ExpenseCategory.Bills,
           'other': ExpenseCategory.Other,
         };
-        
+
         const expenseResult = await recordExpense({
           recipientAddress: friend.address,
           amount: lamports,
@@ -451,7 +593,7 @@ export default function ChatWindow({ selectedChat }) {
           description: `Transfer to @${friend.username}`,
           txSignature: signature,
         });
-        
+
         if (expenseResult.success) {
           console.log('Expense recorded to blockchain:', expenseResult.signature);
         }
@@ -461,7 +603,7 @@ export default function ChatWindow({ selectedChat }) {
       }
     } catch (err) {
       console.error('Transfer error:', err);
-      
+
       // 显示错误消息
       const errorMsg = {
         id: Date.now() + 2,
@@ -470,7 +612,7 @@ export default function ChatWindow({ selectedChat }) {
         timestamp: new Date().toISOString(),
         isMine: true,
       };
-      
+
       setMessages(prev => [...prev, errorMsg]);
     }
   };
@@ -504,10 +646,10 @@ export default function ChatWindow({ selectedChat }) {
     } else {
       // 请求 SOL - 发送带有特殊标记的消息
       const requestContent = `PAYMENT_REQUEST:${paymentAmount}:${publicKey.toString()}`;
-      
+
       // 发送到区块链
       sendMessage(selectedChat.id, requestContent);
-      
+
       // 在本地显示
       const requestMsg = {
         id: Date.now(),
@@ -524,10 +666,10 @@ export default function ChatWindow({ selectedChat }) {
     setPaymentCategory('other');
   };
 
-  const executeTransfer = async (amount, friend) => {
+  const executeTransfer = async (amount, friend, reason = 'Transfer', category = 'other') => {
     try {
       const { Connection, PublicKey, SystemProgram, Transaction, LAMPORTS_PER_SOL } = await import('@solana/web3.js');
-      
+
       // 显示处理中消息
       const processingMsg = {
         id: Date.now(),
@@ -557,7 +699,7 @@ export default function ChatWindow({ selectedChat }) {
 
       // 发送交易
       const signature = await walletSendTransaction(transaction, connection);
-      
+
       // 等待确认
       await connection.confirmTransaction(signature, 'confirmed');
 
@@ -569,23 +711,33 @@ export default function ChatWindow({ selectedChat }) {
         timestamp: new Date().toISOString(),
         isMine: false,
       };
-      
+
       setMessages(prev => {
         const updated = [...prev.filter(m => m.id !== processingMsg.id), successMsg];
         localStorage.setItem('ai_messages', JSON.stringify(updated));
         return updated;
       });
-      
-      // 记录消费到区块链
+
+      // 记录消费到区块链 - 使用选择的分类
       try {
+        const categoryMap = {
+          'dining': ExpenseCategory.Dining,
+          'shopping': ExpenseCategory.Shopping,
+          'entertainment': ExpenseCategory.Entertainment,
+          'travel': ExpenseCategory.Travel,
+          'gifts': ExpenseCategory.Gifts,
+          'bills': ExpenseCategory.Bills,
+          'other': ExpenseCategory.Other,
+        };
+
         const expenseResult = await recordExpense({
           recipientAddress: friend.address,
           amount: lamports,
-          category: ExpenseCategory.Other,
-          description: `AI Transfer to @${friend.username}`,
+          category: categoryMap[category] || ExpenseCategory.Other,
+          description: `AI Transfer to @${friend.username}: ${reason}`,
           txSignature: signature,
         });
-        
+
         if (expenseResult.success) {
           console.log('Expense recorded to blockchain:', expenseResult.signature);
         }
@@ -594,7 +746,7 @@ export default function ChatWindow({ selectedChat }) {
       }
     } catch (err) {
       console.error('Transfer error:', err);
-      
+
       // 显示错误消息
       const errorMsg = {
         id: Date.now() + 2,
@@ -603,7 +755,7 @@ export default function ChatWindow({ selectedChat }) {
         timestamp: new Date().toISOString(),
         isMine: false,
       };
-      
+
       setMessages(prev => {
         const updated = [...prev, errorMsg];
         localStorage.setItem('ai_messages', JSON.stringify(updated));
@@ -634,12 +786,12 @@ export default function ChatWindow({ selectedChat }) {
               {paymentType === 'send' ? '💸 Send SOL' : '💰 Request SOL'}
             </h3>
             <p className="text-sm text-neutral-400 mb-6">
-              {paymentType === 'send' 
-                ? `Send SOL to @${selectedChat?.username}` 
+              {paymentType === 'send'
+                ? `Send SOL to @${selectedChat?.username}`
                 : `Request SOL from @${selectedChat?.username}`
               }
             </p>
-            
+
             {/* Amount */}
             <div className="mb-6">
               <label className="text-sm text-neutral-300 mb-2 block font-medium">Amount (SOL)</label>
@@ -664,11 +816,10 @@ export default function ChatWindow({ selectedChat }) {
                     <button
                       key={cat.id}
                       onClick={() => setPaymentCategory(cat.id)}
-                      className={`p-4 rounded-xl border-2 transition-all duration-200 flex flex-col items-center gap-1 ${
-                        paymentCategory === cat.id
-                          ? 'bg-purple-600 border-purple-500 scale-110 shadow-lg shadow-purple-500/50'
-                          : 'bg-neutral-900 border-neutral-700 hover:border-neutral-600 hover:scale-105'
-                      }`}
+                      className={`p-4 rounded-xl border-2 transition-all duration-200 flex flex-col items-center gap-1 ${paymentCategory === cat.id
+                        ? 'bg-purple-600 border-purple-500 scale-110 shadow-lg shadow-purple-500/50'
+                        : 'bg-neutral-900 border-neutral-700 hover:border-neutral-600 hover:scale-105'
+                        }`}
                       title={cat.name}
                     >
                       <span className="text-3xl">{cat.emoji}</span>
@@ -678,7 +829,7 @@ export default function ChatWindow({ selectedChat }) {
                 </div>
               </div>
             )}
-            
+
             <div className="flex gap-3">
               <Button
                 onClick={handlePaymentSubmit}
@@ -704,175 +855,209 @@ export default function ChatWindow({ selectedChat }) {
 
       <div className="flex-1 flex flex-col bg-neutral-950">
         {/* Chat Header */}
-      <div className="h-16 bg-neutral-900 border-b border-neutral-800 flex items-center px-6">
-        <div className={`
+        <div className="h-16 bg-neutral-900 border-b border-neutral-800 flex items-center px-6">
+          <div className={`
           w-10 h-10 rounded-full flex items-center justify-center mr-3
           ${selectedChat.type === 'ai'
-            ? 'bg-gradient-to-br from-purple-500 to-cyan-500'
-            : 'bg-gradient-to-br from-blue-500 to-green-500'
-          }
+              ? 'bg-gradient-to-br from-purple-500 to-cyan-500'
+              : 'bg-gradient-to-br from-blue-500 to-green-500'
+            }
         `}>
-          {selectedChat.type === 'ai' ? (
-            <Bot className="h-5 w-5 text-white" />
-          ) : (
-            <User className="h-5 w-5 text-white" />
-          )}
-        </div>
-        <div>
-          <h2 className="text-white font-semibold">{selectedChat.name}</h2>
-          {selectedChat.username && (
-            <p className="text-sm text-neutral-400">@{selectedChat.username}</p>
-          )}
-        </div>
-      </div>
-
-      {/* Messages */}
-      <ScrollArea className="flex-1 p-6" ref={scrollRef}>
-        {isLoadingMessages ? (
-          <div className="flex items-center justify-center h-full">
-            <Loader2 className="h-8 w-8 animate-spin text-neutral-400" />
+            {selectedChat.type === 'ai' ? (
+              <Bot className="h-5 w-5 text-white" />
+            ) : (
+              <User className="h-5 w-5 text-white" />
+            )}
           </div>
-        ) : messages.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-neutral-400">
-            <div className="text-center">
-              <p>No messages yet</p>
-              <p className="text-sm mt-1">Start the conversation!</p>
+          <div>
+            <h2 className="text-white font-semibold">{selectedChat.name}</h2>
+            {selectedChat.username && (
+              <p className="text-sm text-neutral-400">@{selectedChat.username}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Messages */}
+        <ScrollArea className="flex-1 p-6" ref={scrollRef}>
+          {isLoadingMessages ? (
+            <div className="flex items-center justify-center h-full">
+              <Loader2 className="h-8 w-8 animate-spin text-neutral-400" />
             </div>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {messages.map((message) => (
-              <MessageBubble
-                key={message.id}
-                message={message}
-                isAI={selectedChat.type === 'ai' && !message.isMine}
-                onConfirmTransfer={executeTransfer}
-                onPaymentRequestResponse={handlePaymentRequestResponse}
-                onCancelTransfer={() => {
-                  const cancelMsg = {
-                    id: Date.now(),
-                    content: '❌ Transfer cancelled.',
-                    sender: 'ai',
-                    timestamp: new Date().toISOString(),
-                    isMine: false,
-                  };
-                  setMessages(prev => {
-                    const updated = [...prev, cancelMsg];
-                    localStorage.setItem('ai_messages', JSON.stringify(updated));
-                    return updated;
-                  });
-                }}
-              />
-            ))}
-          </div>
-        )}
-      </ScrollArea>
+          ) : messages.length === 0 ? (
+            <div className="flex items-center justify-center h-full text-neutral-400">
+              <div className="text-center">
+                <p>No messages yet</p>
+                <p className="text-sm mt-1">Start the conversation!</p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {messages.map((message) => (
+                <MessageBubble
+                  key={message.id}
+                  message={message}
+                  isAI={selectedChat.type === 'ai' && !message.isMine}
+                  onConfirmTransfer={executeTransfer}
+                  onPaymentRequestResponse={handlePaymentRequestResponse}
+                  onCategorySelect={handleCategorySelect}
+                  onCancelTransfer={() => {
+                    const cancelMsg = {
+                      id: Date.now(),
+                      content: '❌ Transfer cancelled.',
+                      sender: 'ai',
+                      timestamp: new Date().toISOString(),
+                      isMine: false,
+                    };
+                    setMessages(prev => {
+                      const updated = [...prev, cancelMsg];
+                      localStorage.setItem('ai_messages', JSON.stringify(updated));
+                      return updated;
+                    });
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </ScrollArea>
 
-      {/* Input */}
-      <div className="p-4 bg-neutral-900 border-t border-neutral-800 relative">
-        {/* Mention suggestions */}
-        {showMentions && filteredFriends.length > 0 && (
-          <div className="absolute bottom-full left-4 right-4 mb-2 bg-neutral-800 border border-neutral-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-            {filteredFriends.map((friend) => (
+        {/* Input */}
+        <div className="p-4 bg-neutral-900 border-t border-neutral-800 relative">
+          {/* Mention suggestions */}
+          {showMentions && filteredFriends.length > 0 && (
+            <div className="absolute bottom-full left-4 right-4 mb-2 bg-neutral-800 border border-neutral-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+              {filteredFriends.map((friend) => (
+                <button
+                  key={friend.address}
+                  onClick={() => selectMention(friend.username)}
+                  className="w-full flex items-center gap-3 p-3 hover:bg-neutral-700 transition-colors text-left"
+                >
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-green-500 flex items-center justify-center flex-shrink-0">
+                    <User className="h-4 w-4 text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-white">{friend.displayName}</p>
+                    <p className="text-xs text-neutral-400">@{friend.username}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Payment menu */}
+          {showPaymentMenu && selectedChat?.type === 'friend' && (
+            <div className="absolute bottom-full left-4 mb-2 bg-neutral-800 border border-neutral-700 rounded-lg shadow-lg overflow-hidden">
               <button
-                key={friend.address}
-                onClick={() => selectMention(friend.username)}
-                className="w-full flex items-center gap-3 p-3 hover:bg-neutral-700 transition-colors text-left"
+                onClick={() => handlePaymentAction('send')}
+                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-neutral-700 transition-colors text-left"
               >
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-green-500 flex items-center justify-center flex-shrink-0">
-                  <User className="h-4 w-4 text-white" />
+                <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center">
+                  <Send className="h-4 w-4 text-white" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white">{friend.displayName}</p>
-                  <p className="text-xs text-neutral-400">@{friend.username}</p>
+                <div>
+                  <p className="text-sm font-medium text-white">Send SOL</p>
+                  <p className="text-xs text-neutral-400">Transfer SOL to this friend</p>
                 </div>
               </button>
-            ))}
-          </div>
-        )}
-
-        {/* Payment menu */}
-        {showPaymentMenu && selectedChat?.type === 'friend' && (
-          <div className="absolute bottom-full left-4 mb-2 bg-neutral-800 border border-neutral-700 rounded-lg shadow-lg overflow-hidden">
-            <button
-              onClick={() => handlePaymentAction('send')}
-              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-neutral-700 transition-colors text-left"
-            >
-              <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center">
-                <Send className="h-4 w-4 text-white" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-white">Send SOL</p>
-                <p className="text-xs text-neutral-400">Transfer SOL to this friend</p>
-              </div>
-            </button>
-            <button
-              onClick={() => handlePaymentAction('request')}
-              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-neutral-700 transition-colors text-left border-t border-neutral-700"
-            >
-              <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
-                <svg className="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-white">Request SOL</p>
-                <p className="text-xs text-neutral-400">Request payment from this friend</p>
-              </div>
-            </button>
-          </div>
-        )}
-
-        {/* Payment modal - moved outside to be centered on screen */}
-
-        {selectedChat?.type === 'ai' && (
-          <div className="mb-2 text-xs text-neutral-500">
-            💡 Try: &quot;send sol 0.1 to @username&quot;
-          </div>
-        )}
-
-        <div className="flex gap-2">
-          {/* + Button for friends */}
-          {selectedChat?.type === 'friend' && (
-            <Button
-              onClick={() => setShowPaymentMenu(!showPaymentMenu)}
-              className="bg-neutral-800 hover:bg-neutral-700 border border-neutral-700"
-              size="icon"
-            >
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-            </Button>
+              <button
+                onClick={() => handlePaymentAction('request')}
+                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-neutral-700 transition-colors text-left border-t border-neutral-700"
+              >
+                <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
+                  <svg className="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-white">Request SOL</p>
+                  <p className="text-xs text-neutral-400">Request payment from this friend</p>
+                </div>
+              </button>
+            </div>
           )}
-          
-          <Input
-            ref={inputRef}
-            value={inputMessage}
-            onChange={handleInputChange}
-            onKeyPress={handleKeyPress}
-            placeholder={selectedChat?.type === 'ai' ? "Type a command or message... (use @ to mention friends)" : "Type a message..."}
-            className="flex-1 bg-neutral-800 border-neutral-700 text-white"
-            disabled={!connected || isSending}
-          />
-          <Button
-            onClick={handleSendMessage}
-            disabled={!inputMessage.trim() || !connected || isSending}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            {isSending ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <Send className="h-5 w-5" />
+
+          {/* Payment modal - moved outside to be centered on screen */}
+
+          {selectedChat?.type === 'ai' && (
+            <div className="mb-2 text-xs text-neutral-500">
+              💡 Try: &quot;send sol 0.1 to @username&quot; or use voice input 🎤
+            </div>
+          )}
+
+          {/* Voice Error Message */}
+          {voiceError && (
+            <div className="mb-2 text-xs text-red-400 animate-pulse">
+              ⚠️ {voiceError}
+            </div>
+          )}
+
+          {/* Listening Indicator */}
+          {isListening && (
+            <div className="mb-2 text-xs text-purple-400 animate-pulse">
+              🎤 Listening... Speak now
+            </div>
+          )}
+
+          <div className="flex gap-2">
+            {/* + Button for friends */}
+            {selectedChat?.type === 'friend' && (
+              <Button
+                onClick={() => setShowPaymentMenu(!showPaymentMenu)}
+                className="bg-neutral-800 hover:bg-neutral-700 border border-neutral-700"
+                size="icon"
+              >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+              </Button>
             )}
-          </Button>
+
+            <Input
+              ref={inputRef}
+              value={inputMessage}
+              onChange={handleInputChange}
+              onKeyPress={handleKeyPress}
+              placeholder={selectedChat?.type === 'ai' ? "Type a command or message... (use @ to mention friends)" : "Type a message..."}
+              className="flex-1 bg-neutral-800 border-neutral-700 text-white"
+              disabled={!connected || isSending}
+            />
+
+            {/* Voice Input Button */}
+            <Button
+              onClick={handleVoiceInput}
+              disabled={!connected || isSending || isListening}
+              className={`${isListening
+                ? 'bg-red-600 hover:bg-red-700 animate-pulse'
+                : 'bg-purple-600 hover:bg-purple-700'
+                }`}
+              title={voiceError || (isListening ? 'Listening...' : 'Voice Input')}
+            >
+              {isListening ? (
+                <MicOff className="h-5 w-5" />
+              ) : (
+                <Mic className="h-5 w-5" />
+              )}
+            </Button>
+
+            {/* Send Button */}
+            <Button
+              onClick={handleSendMessage}
+              disabled={!inputMessage.trim() || !connected || isSending}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {isSending ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Send className="h-5 w-5" />
+              )}
+            </Button>
+          </div>
         </div>
-      </div>
       </div>
     </>
   );
 }
 
-function MessageBubble({ message, isAI, onConfirmTransfer, onCancelTransfer, onPaymentRequestResponse }) {
+function MessageBubble({ message, isAI, onConfirmTransfer, onCancelTransfer, onPaymentRequestResponse, onCategorySelect }) {
   const isMine = message.isMine;
   const time = new Date(message.timestamp).toLocaleTimeString('en-US', {
     hour: '2-digit',
@@ -909,7 +1094,7 @@ function MessageBubble({ message, isAI, onConfirmTransfer, onCancelTransfer, onP
             }
           `}>
             <p className="break-words whitespace-pre-line">{message.content}</p>
-            
+
             {/* Payment Request buttons */}
             {message.isPaymentRequest && message.paymentRequestData && (
               <div className="flex gap-2 mt-3">
@@ -931,12 +1116,27 @@ function MessageBubble({ message, isAI, onConfirmTransfer, onCancelTransfer, onP
               </div>
             )}
 
+            {/* Category Selection */}
+            {message.showCategorySelection && message.transferData && (
+              <div className="mt-3">
+                <CategorySelectionButtons
+                  transferData={message.transferData}
+                  onSelect={(category) => onCategorySelect(category, message.transferData)}
+                />
+              </div>
+            )}
+
             {/* Confirmation buttons */}
             {message.isConfirmation && message.transferData && (
               <div className="flex gap-2 mt-3">
                 <Button
                   size="sm"
-                  onClick={() => onConfirmTransfer(message.transferData.amount, message.transferData.friend)}
+                  onClick={() => onConfirmTransfer(
+                    message.transferData.amount,
+                    message.transferData.friend,
+                    message.transferData.reason || 'Transfer',
+                    message.transferData.category || 'other'
+                  )}
                   className="bg-green-600 hover:bg-green-700 text-white"
                 >
                   ✓ Confirm Transfer
@@ -957,6 +1157,34 @@ function MessageBubble({ message, isAI, onConfirmTransfer, onCancelTransfer, onP
           </p>
         </div>
       </div>
+    </div>
+  );
+}
+
+// Category Selection Buttons Component
+function CategorySelectionButtons({ transferData, onSelect }) {
+  const EXPENSE_CATEGORIES = [
+    { id: 'dining', name: 'Dining', emoji: '🍽️' },
+    { id: 'shopping', name: 'Shopping', emoji: '🛍️' },
+    { id: 'entertainment', name: 'Entertainment', emoji: '🎮' },
+    { id: 'travel', name: 'Travel', emoji: '✈️' },
+    { id: 'gifts', name: 'Gifts', emoji: '🎁' },
+    { id: 'bills', name: 'Bills', emoji: '📄' },
+    { id: 'other', name: 'Other', emoji: '📦' },
+  ];
+
+  return (
+    <div className="grid grid-cols-4 gap-2 max-w-md">
+      {EXPENSE_CATEGORIES.map((cat) => (
+        <button
+          key={cat.id}
+          onClick={() => onSelect(cat.id)}
+          className="p-3 rounded-xl border-2 border-neutral-700 bg-neutral-900 hover:border-purple-500 hover:bg-neutral-800 transition-all duration-200 flex flex-col items-center gap-1 hover:scale-105"
+        >
+          <span className="text-2xl">{cat.emoji}</span>
+          <span className="text-xs text-neutral-300 font-medium">{cat.name}</span>
+        </button>
+      ))}
     </div>
   );
 }

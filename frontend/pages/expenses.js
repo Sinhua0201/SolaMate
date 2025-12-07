@@ -51,11 +51,12 @@ export default function ExpensesPage() {
     try {
       const program = getProgram({ publicKey });
       const [expenseStatsPDA] = getExpenseStatsPDA(publicKey);
-      
+
       // 获取统计数据
       const statsData = await program.account.expenseStats.fetchNullable(expenseStatsPDA);
-      
+
       if (statsData) {
+        // 账户存在，加载数据
         setStats({
           totalSpent: statsData.totalSpent.toNumber(),
           recordCount: statsData.recordCount.toNumber(),
@@ -67,7 +68,7 @@ export default function ExpensesPage() {
           billsTotal: statsData.billsTotal.toNumber(),
           otherTotal: statsData.otherTotal.toNumber(),
         });
-        
+
         // 获取所有消费记录
         const allRecords = await program.account.expenseRecord.all([
           {
@@ -77,7 +78,7 @@ export default function ExpensesPage() {
             },
           },
         ]);
-        
+
         const formattedRecords = allRecords.map(r => ({
           publicKey: r.publicKey.toString(),
           owner: r.account.owner.toString(),
@@ -88,22 +89,66 @@ export default function ExpensesPage() {
           timestamp: r.account.timestamp.toNumber() * 1000,
           txSignature: r.account.txSignature,
         }));
-        
+
         // 应用过滤
         const filtered = filterRecords(formattedRecords);
         setRecords(filtered);
       } else {
-        setStats(null);
+        // 账户不存在，显示空数据（不需要初始化）
+        console.log('Expense stats not found, showing empty data');
+        setStats({
+          totalSpent: 0,
+          recordCount: 0,
+          diningTotal: 0,
+          shoppingTotal: 0,
+          entertainmentTotal: 0,
+          travelTotal: 0,
+          giftsTotal: 0,
+          billsTotal: 0,
+          otherTotal: 0,
+        });
         setRecords([]);
-        setNeedsInit(true);
       }
     } catch (err) {
       console.error('Error loading expenses:', err);
       if (err.message?.includes('Account does not exist')) {
-        setNeedsInit(true);
+        // 账户不存在，自动初始化
+        console.log('Account does not exist, auto-initializing...');
+        await autoInitialize();
       }
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // 自动初始化
+  const autoInitialize = async () => {
+    try {
+      console.log('Auto-initializing expense stats...');
+      const result = await initializeExpenseStats();
+      if (result.success) {
+        console.log('Expense stats initialized successfully');
+        // 初始化成功后，设置空数据
+        setStats({
+          totalSpent: 0,
+          recordCount: 0,
+          diningTotal: 0,
+          shoppingTotal: 0,
+          entertainmentTotal: 0,
+          travelTotal: 0,
+          giftsTotal: 0,
+          billsTotal: 0,
+          otherTotal: 0,
+        });
+        setRecords([]);
+        setNeedsInit(false);
+      } else {
+        console.error('Failed to initialize expense stats:', result.error);
+        setNeedsInit(true);
+      }
+    } catch (err) {
+      console.error('Error auto-initializing:', err);
+      setNeedsInit(true);
     }
   };
 
@@ -116,7 +161,7 @@ export default function ExpensesPage() {
 
   const filterRecords = (allRecords) => {
     let filtered = [...allRecords];
-    
+
     // 时间过滤
     const now = new Date();
     if (timeFilter === 'week') {
@@ -133,18 +178,18 @@ export default function ExpensesPage() {
       const end = new Date(endDate).getTime();
       filtered = filtered.filter(r => r.timestamp >= start && r.timestamp <= end);
     }
-    
+
     // 分类过滤
     if (categoryFilter !== 'all') {
       filtered = filtered.filter(r => r.category.toLowerCase() === categoryFilter);
     }
-    
+
     return filtered.sort((a, b) => b.timestamp - a.timestamp);
   };
 
   const getCategoryData = () => {
     if (!stats) return [];
-    
+
     return [
       { category: 'Dining', value: stats.diningTotal, color: '#ef4444' },
       { category: 'Shopping', value: stats.shoppingTotal, color: '#f59e0b' },
@@ -174,7 +219,7 @@ export default function ExpensesPage() {
   return (
     <div className="min-h-screen bg-neutral-950">
       <Navbar />
-      
+
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold text-white">💰 Expense Tracking</h1>
@@ -193,16 +238,19 @@ export default function ExpensesPage() {
           )}
         </div>
 
-        {isLoading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="h-12 w-12 animate-spin text-purple-500" />
+        {isLoading || isInitializing ? (
+          <div className="flex flex-col items-center justify-center py-12">
+            <Loader2 className="h-12 w-12 animate-spin text-purple-500 mb-4" />
+            <p className="text-neutral-400">
+              {isInitializing ? 'Initializing expense tracking...' : 'Loading...'}
+            </p>
           </div>
         ) : needsInit ? (
           <Card className="bg-neutral-900 border-neutral-800 p-8 text-center">
-            <AlertCircle className="h-16 w-16 mx-auto mb-4 text-yellow-500" />
-            <h2 className="text-2xl font-bold text-white mb-2">Initialize Expense Tracking</h2>
+            <AlertCircle className="h-16 w-16 mx-auto mb-4 text-red-500" />
+            <h2 className="text-2xl font-bold text-white mb-2">Initialization Failed</h2>
             <p className="text-neutral-400 mb-6">
-              You need to initialize your expense tracking account first.
+              Failed to initialize expense tracking automatically. Please try again.
             </p>
             <Button
               onClick={handleInitialize}
@@ -215,13 +263,49 @@ export default function ExpensesPage() {
                   Initializing...
                 </>
               ) : (
-                'Initialize Now'
+                'Retry Initialization'
               )}
             </Button>
           </Card>
-        ) : !stats ? (
+        ) : !stats || (stats.totalSpent === 0 && stats.recordCount === 0) ? (
           <Card className="bg-neutral-900 border-neutral-800 p-8 text-center">
-            <p className="text-neutral-400">No expense data yet. Start tracking your expenses!</p>
+            <TrendingUp className="h-16 w-16 mx-auto mb-4 text-purple-400" />
+            <h2 className="text-2xl font-bold text-white mb-2">No Expense Data Yet</h2>
+            <p className="text-neutral-400 mb-6">
+              Start making transfers to automatically track your expenses!
+            </p>
+
+            {/* Check if user skipped onboarding */}
+            {(() => {
+              const onboardingStatus = typeof window !== 'undefined' && publicKey
+                ? localStorage.getItem(`expense_onboarding_${publicKey.toString()}`)
+                : null;
+
+              if (onboardingStatus === 'skipped') {
+                return (
+                  <div className="mt-4">
+                    <p className="text-sm text-neutral-500 mb-4">
+                      You skipped expense tracking setup. Enable it now to start tracking your spending.
+                    </p>
+                    <Button
+                      onClick={handleInitialize}
+                      disabled={isInitializing}
+                      className="bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700"
+                    >
+                      {isInitializing ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          Enabling...
+                        </>
+                      ) : (
+                        'Enable Expense Tracking'
+                      )}
+                    </Button>
+                  </div>
+                );
+              }
+              return null;
+            })()}
           </Card>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -230,7 +314,7 @@ export default function ExpensesPage() {
               <Card className="bg-neutral-900 border-neutral-800 p-6">
                 <h3 className="text-lg font-bold text-white mb-4">Spending by Category</h3>
                 <PieChart data={getCategoryData()} />
-                
+
                 {/* Category Legend */}
                 <div className="mt-6 space-y-2">
                   {getCategoryData().map((item) => (
@@ -318,7 +402,7 @@ export default function ExpensesPage() {
                 <h3 className="text-lg font-bold text-white mb-4">
                   Transaction History ({records.length})
                 </h3>
-                
+
                 {records.length === 0 ? (
                   <p className="text-center text-neutral-400 py-8">No transactions found</p>
                 ) : (
@@ -370,7 +454,7 @@ export default function ExpensesPage() {
 
 function PieChart({ data }) {
   const [hoveredIndex, setHoveredIndex] = useState(null);
-  
+
   if (!data || data.length === 0) {
     return (
       <div className="w-full aspect-square flex items-center justify-center bg-neutral-800 rounded-lg">
@@ -381,27 +465,27 @@ function PieChart({ data }) {
 
   const total = data.reduce((sum, item) => sum + item.value, 0);
   let currentAngle = 0;
-  
+
   // 计算每个扇形的路径和角度
   const slices = data.map((item, index) => {
     const percentage = item.value / total;
     const angle = percentage * 360;
     const startAngle = currentAngle;
     const endAngle = currentAngle + angle;
-    
+
     const x1 = 100 + 90 * Math.cos((startAngle - 90) * Math.PI / 180);
     const y1 = 100 + 90 * Math.sin((startAngle - 90) * Math.PI / 180);
     const x2 = 100 + 90 * Math.cos((endAngle - 90) * Math.PI / 180);
     const y2 = 100 + 90 * Math.sin((endAngle - 90) * Math.PI / 180);
-    
+
     const largeArc = angle > 180 ? 1 : 0;
     const path = `M 100 100 L ${x1} ${y1} A 90 90 0 ${largeArc} 1 ${x2} ${y2} Z`;
-    
+
     currentAngle = endAngle;
-    
+
     return { ...item, path, percentage, index };
   });
-  
+
   const hoveredItem = hoveredIndex !== null ? slices[hoveredIndex] : null;
 
   return (
@@ -424,10 +508,10 @@ function PieChart({ data }) {
             onMouseLeave={() => setHoveredIndex(null)}
           />
         ))}
-        
+
         {/* Center circle */}
         <circle cx="100" cy="100" r="50" fill="#171717" />
-        
+
         {hoveredItem ? (
           <>
             <text x="100" y="90" textAnchor="middle" className="fill-white text-xs font-bold">
