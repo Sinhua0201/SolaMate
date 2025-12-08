@@ -94,10 +94,10 @@ export function ProfileSetupModal({ isOpen, onClose, onProfileCreated }) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md glass-modal rounded-3xl">
         <DialogHeader>
-          <DialogTitle>Welcome to SolaMate! 👋</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-neutral-800">Welcome to SolaMate! 👋</DialogTitle>
+          <DialogDescription className="text-neutral-500">
             Set up your profile so others can find and send you SOL easily
           </DialogDescription>
         </DialogHeader>
@@ -105,7 +105,7 @@ export function ProfileSetupModal({ isOpen, onClose, onProfileCreated }) {
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           {/* Avatar Carousel with 3D Rotation Effect */}
           <div className="flex flex-col items-center gap-4">
-            <p className="text-sm text-neutral-400">Choose your avatar</p>
+            <p className="text-sm text-neutral-600 font-medium">Choose your avatar</p>
             
             <div className="flex items-center gap-4">
               {/* Left Arrow */}
@@ -114,9 +114,9 @@ export function ProfileSetupModal({ isOpen, onClose, onProfileCreated }) {
                 variant="ghost"
                 size="icon"
                 onClick={prevAvatar}
-                className="h-10 w-10 rounded-full bg-neutral-800 hover:bg-neutral-700 hover:scale-110 transition-transform"
+                className="h-10 w-10 rounded-full glass-button hover:scale-110 ios-transition border border-neutral-200 shadow-md"
               >
-                <ChevronLeft className="h-6 w-6" />
+                <ChevronLeft className="h-6 w-6 text-neutral-700" />
               </Button>
 
               {/* Avatar Display with 3D Rotation */}
@@ -150,7 +150,7 @@ export function ProfileSetupModal({ isOpen, onClose, onProfileCreated }) {
                     style={{ transformStyle: "preserve-3d" }}
                   >
                     <motion.div 
-                      className="w-28 h-28 rounded-full border-4 border-purple-500 overflow-hidden bg-neutral-800 shadow-2xl"
+                      className="w-28 h-28 rounded-full border-4 border-purple-500 overflow-hidden bg-white shadow-2xl"
                       animate={{
                         boxShadow: [
                           "0 0 20px rgba(168, 85, 247, 0.4), 0 0 40px rgba(168, 85, 247, 0.2)",
@@ -181,9 +181,9 @@ export function ProfileSetupModal({ isOpen, onClose, onProfileCreated }) {
                 variant="ghost"
                 size="icon"
                 onClick={nextAvatar}
-                className="h-10 w-10 rounded-full bg-neutral-800 hover:bg-neutral-700 hover:scale-110 transition-transform"
+                className="h-10 w-10 rounded-full glass-button hover:scale-110 ios-transition border border-neutral-200 shadow-md"
               >
-                <ChevronRight className="h-6 w-6" />
+                <ChevronRight className="h-6 w-6 text-neutral-700" />
               </Button>
             </div>
 
@@ -199,8 +199,8 @@ export function ProfileSetupModal({ isOpen, onClose, onProfileCreated }) {
                   }}
                   className={`rounded-full transition-all ${
                     index === selectedAvatarIndex
-                      ? "bg-gradient-to-r from-purple-500 to-cyan-500"
-                      : "bg-neutral-600 hover:bg-neutral-500"
+                      ? "bg-gradient-to-r from-purple-500 to-cyan-500 shadow-md shadow-purple-500/30"
+                      : "bg-neutral-300 hover:bg-neutral-400"
                   }`}
                   animate={{
                     width: index === selectedAvatarIndex ? 20 : 8,
@@ -219,37 +219,36 @@ export function ProfileSetupModal({ isOpen, onClose, onProfileCreated }) {
 
           {/* Username Input */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-neutral-300">
+            <label className="text-sm font-medium text-neutral-700">
               Username
             </label>
             <Input
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="sinhua_0201"
-              className="bg-neutral-800 border-neutral-700 text-white"
               maxLength={20}
             />
-            <p className="text-xs text-neutral-500">
+            <p className="text-xs text-neutral-400">
               3-20 characters, letters, numbers, and underscore only
             </p>
           </div>
 
           {/* Wallet Address (Read-only) */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-neutral-300">
+            <label className="text-sm font-medium text-neutral-700">
               Wallet Address
             </label>
             <Input
               value={walletAddress || ""}
               readOnly
-              className="bg-neutral-900 border-neutral-700 text-neutral-400 font-mono text-xs"
+              className="font-mono text-xs opacity-60"
             />
           </div>
 
           {/* Error Message */}
           {error && (
-            <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-3">
-              <p className="text-sm text-red-400">{error}</p>
+            <div className="glass bg-red-50 border border-red-200 rounded-xl p-3">
+              <p className="text-sm text-red-600">{error}</p>
             </div>
           )}
 
@@ -257,7 +256,7 @@ export function ProfileSetupModal({ isOpen, onClose, onProfileCreated }) {
           <Button
             type="submit"
             disabled={isSubmitting || !username.trim()}
-            className="w-full bg-gradient-to-r from-purple-600 to-cyan-600"
+            className="w-full bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600 text-white rounded-xl shadow-lg shadow-purple-500/20 ios-transition"
           >
             <Check className="h-4 w-4 mr-2" />
             {isSubmitting ? "Creating Profile..." : "Confirm"}

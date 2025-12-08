@@ -91,7 +91,7 @@ export function NotificationBell() {
           fetchNotifications(); // Refresh notifications when clicked
           setIsOpen(true);
         }}
-        className="relative bg-neutral-900/50 border-neutral-700 text-neutral-300 hover:bg-neutral-800 hover:text-white h-9 w-9 p-0 flex items-center justify-center"
+        className="relative glass-button text-neutral-600 hover:text-neutral-800 h-9 w-9 p-0 flex items-center justify-center shadow-md"
       >
         <Bell className="h-4 w-4" />
         {/* Unread count badge */}
@@ -128,18 +128,18 @@ export function NotificationBell() {
                 {notifications.map((notification) => (
                   <Card 
                     key={notification.id}
-                    className="bg-gradient-to-br from-orange-900/20 to-yellow-900/20 border-orange-500/30 p-4 w-full"
+                    className="bg-gradient-to-br from-orange-50 to-yellow-50 border-orange-200 p-4 w-full shadow-md"
                   >
                     {/* Notification Header */}
                     <div className="flex items-start gap-3 mb-3">
-                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-orange-600/20 border border-orange-500/30 flex items-center justify-center">
-                        <Bell className="h-5 w-5 text-orange-400" />
+                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-orange-100 border border-orange-200 flex items-center justify-center">
+                        <Bell className="h-5 w-5 text-orange-500" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="text-sm font-semibold text-white mb-1">
+                        <h4 className="text-sm font-semibold text-neutral-800 mb-1">
                           {notification.title || 'Payment Request'}
                         </h4>
-                        <p className="text-xs text-neutral-300 mb-2">
+                        <p className="text-xs text-neutral-600 mb-2">
                           {notification.message}
                         </p>
                       </div>
@@ -148,28 +148,28 @@ export function NotificationBell() {
                     {/* Amount and Details */}
                     <div className="space-y-2 mb-3 pl-13">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-neutral-400">Amount:</span>
-                        <span className="text-sm font-bold text-white">
+                        <span className="text-xs text-neutral-500">Amount:</span>
+                        <span className="text-sm font-bold text-orange-600">
                           {notification.amount} SOL
                         </span>
                       </div>
                       {notification.description && (
                         <div className="flex items-center justify-between">
-                          <span className="text-xs text-neutral-400">For:</span>
-                          <span className="text-xs text-neutral-300">
+                          <span className="text-xs text-neutral-500">For:</span>
+                          <span className="text-xs text-neutral-700">
                             {notification.description}
                           </span>
                         </div>
                       )}
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-neutral-400">From:</span>
-                        <span className="text-xs text-neutral-300 font-mono">
+                        <span className="text-xs text-neutral-500">From:</span>
+                        <span className="text-xs text-neutral-700 font-mono">
                           {notification.fromName || `${notification.from?.substring(0, 8)}...`}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-neutral-400">Time:</span>
-                        <span className="text-xs text-neutral-300">
+                        <span className="text-xs text-neutral-500">Time:</span>
+                        <span className="text-xs text-neutral-700">
                           {new Date(notification.timestamp).toLocaleString('en-US', {
                             month: 'short',
                             day: 'numeric',
@@ -184,7 +184,7 @@ export function NotificationBell() {
                     <div className="flex gap-2 pl-13">
                       <Button
                         size="sm"
-                        className="flex-1 bg-gradient-to-r from-orange-600 to-yellow-600 hover:from-orange-500 hover:to-yellow-500 text-white text-xs h-8"
+                        className="flex-1 bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white text-xs h-8 shadow-md"
                         onClick={() => handlePayNow(notification)}
                       >
                         Pay Now
@@ -192,7 +192,7 @@ export function NotificationBell() {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="bg-neutral-800 border-neutral-700 text-neutral-300 hover:bg-neutral-700 text-xs h-8"
+                        className="bg-white border-neutral-200 text-neutral-600 hover:bg-neutral-50 text-xs h-8"
                         onClick={() => handleDismiss(notification.id)}
                       >
                         Dismiss

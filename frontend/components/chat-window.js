@@ -7,6 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useSendMessage, useInitializeChatRoom } from '@/lib/solana/hooks/useChatProgram';
 import { useRecordExpense, ExpenseCategory } from '@/lib/solana/hooks/useExpenseProgram';
 import { useRealtimeChatWebSocket } from '@/hooks/useRealtimeChatWebSocket';
+import { toast } from 'sonner';
 
 // Helper to get avatar path from filename
 const getAvatarPath = (name) => name ? `/avatar/${name}` : null;
@@ -331,11 +332,15 @@ export default function ChatWindow({ selectedChat }) {
           // WebSocket 会自动更新消息，但手动刷新确保立即显示
           refreshFriendMessages();
         } else {
-          alert('Failed to send message: ' + result.error);
+          toast.error('Failed to send message', {
+            description: result.error,
+          });
         }
       } catch (err) {
         console.error('Error sending message:', err);
-        alert('Failed to send message');
+        toast.error('Failed to send message', {
+          description: 'Please try again',
+        });
       }
     }
   };
@@ -552,7 +557,9 @@ export default function ChatWindow({ selectedChat }) {
 
   const handlePaymentSubmit = async () => {
     if (!paymentAmount || parseFloat(paymentAmount) <= 0) {
-      alert('Please enter a valid amount');
+      toast.error('Invalid amount', {
+        description: 'Please enter a valid amount',
+      });
       return;
     }
 
@@ -692,10 +699,10 @@ export default function ChatWindow({ selectedChat }) {
 
   if (!selectedChat) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-neutral-950">
-        <div className="text-center text-neutral-400">
-          <Bot className="h-16 w-16 mx-auto mb-4 opacity-50" />
-          <h3 className="text-xl font-semibold mb-2">Welcome to SolaMate Chat</h3>
+      <div className="flex-1 flex items-center justify-center bg-transparent">
+        <div className="text-center text-neutral-500">
+          <Bot className="h-16 w-16 mx-auto mb-4 opacity-50 text-purple-400" />
+          <h3 className="text-xl font-semibold mb-2 text-neutral-700">Welcome to SolaMate Chat</h3>
           <p>Select a chat to start messaging</p>
         </div>
       </div>
@@ -706,12 +713,12 @@ export default function ChatWindow({ selectedChat }) {
     <>
       {/* Payment modal - fixed position, centered on screen */}
       {showPaymentModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-neutral-800 rounded-xl p-6 w-full max-w-md border-2 border-neutral-700 shadow-2xl">
-            <h3 className="text-xl font-bold text-white mb-2">
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="glass-card rounded-3xl p-6 w-full max-w-md border border-purple-200/50 shadow-2xl shadow-purple-500/20">
+            <h3 className="text-xl font-bold text-neutral-800 mb-2">
               {paymentType === 'send' ? '💸 Send SOL' : '💰 Request SOL'}
             </h3>
-            <p className="text-sm text-neutral-400 mb-6">
+            <p className="text-sm text-neutral-500 mb-6">
               {paymentType === 'send'
                 ? `Send SOL to @${selectedChat?.username}`
                 : `Request SOL from @${selectedChat?.username}`
@@ -720,7 +727,7 @@ export default function ChatWindow({ selectedChat }) {
 
             {/* Amount */}
             <div className="mb-6">
-              <label className="text-sm text-neutral-300 mb-2 block font-medium">Amount (SOL)</label>
+              <label className="text-sm text-neutral-700 mb-2 block font-medium">Amount (SOL)</label>
               <Input
                 type="number"
                 step="0.01"
@@ -728,7 +735,7 @@ export default function ChatWindow({ selectedChat }) {
                 value={paymentAmount}
                 onChange={(e) => setPaymentAmount(e.target.value)}
                 placeholder="0.00"
-                className="bg-neutral-900 border-neutral-700 text-white text-lg h-12"
+                className="text-lg h-12"
                 autoFocus
               />
             </div>
@@ -736,20 +743,20 @@ export default function ChatWindow({ selectedChat }) {
             {/* Category - only for send */}
             {paymentType === 'send' && (
               <div className="mb-6">
-                <label className="text-sm text-neutral-300 mb-3 block font-medium">Select Category</label>
+                <label className="text-sm text-neutral-700 mb-3 block font-medium">Select Category</label>
                 <div className="grid grid-cols-4 gap-3">
                   {EXPENSE_CATEGORIES.map((cat) => (
                     <button
                       key={cat.id}
                       onClick={() => setPaymentCategory(cat.id)}
                       className={`p-4 rounded-xl border-2 transition-all duration-200 flex flex-col items-center gap-1 ${paymentCategory === cat.id
-                        ? 'bg-purple-600 border-purple-500 scale-110 shadow-lg shadow-purple-500/50'
-                        : 'bg-neutral-900 border-neutral-700 hover:border-neutral-600 hover:scale-105'
+                        ? 'bg-purple-500 border-purple-400 scale-110 shadow-lg shadow-purple-500/30 text-white'
+                        : 'bg-white/60 border-neutral-200 hover:border-purple-300 hover:scale-105'
                         }`}
                       title={cat.name}
                     >
                       <span className="text-3xl">{cat.emoji}</span>
-                      <span className="text-xs text-neutral-300 font-medium">{cat.name}</span>
+                      <span className={`text-xs font-medium ${paymentCategory === cat.id ? 'text-white' : 'text-neutral-600'}`}>{cat.name}</span>
                     </button>
                   ))}
                 </div>
@@ -759,7 +766,7 @@ export default function ChatWindow({ selectedChat }) {
             <div className="flex gap-3">
               <Button
                 onClick={handlePaymentSubmit}
-                className="flex-1 h-12 text-base font-semibold bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700"
+                className="flex-1 h-12 text-base font-semibold bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600 text-white rounded-xl shadow-lg shadow-purple-500/30"
               >
                 {paymentType === 'send' ? 'Send Payment' : 'Send Request'}
               </Button>
@@ -770,7 +777,7 @@ export default function ChatWindow({ selectedChat }) {
                   setPaymentCategory('other');
                 }}
                 variant="outline"
-                className="flex-1 h-12 text-base font-semibold bg-neutral-700 border-neutral-600 hover:bg-neutral-600"
+                className="flex-1 h-12 text-base font-semibold bg-white/60 border-neutral-200 hover:bg-white/80 text-neutral-700 rounded-xl"
               >
                 Cancel
               </Button>
@@ -779,14 +786,14 @@ export default function ChatWindow({ selectedChat }) {
         </div>
       )}
 
-      <div className="flex-1 flex flex-col bg-neutral-950">
-        {/* Chat Header */}
-        <div className="h-16 bg-neutral-900 border-b border-neutral-800 flex items-center px-6">
+      <div className="flex-1 flex flex-col bg-transparent">
+        {/* Chat Header - Glass Style */}
+        <div className="h-16 glass-dark border-b border-black/5 flex items-center px-6">
           <div className={`
-          w-10 h-10 rounded-full flex items-center justify-center mr-3 overflow-hidden
+          w-10 h-10 rounded-full flex items-center justify-center mr-3 overflow-hidden shadow-lg
           ${selectedChat.type === 'ai'
-              ? 'bg-gradient-to-br from-purple-500 to-cyan-500'
-              : 'bg-gradient-to-br from-blue-500 to-green-500'
+              ? 'bg-gradient-to-br from-purple-500 to-cyan-500 shadow-purple-500/20'
+              : 'bg-gradient-to-br from-blue-500 to-green-500 shadow-blue-500/20'
             }
         `}>
             {selectedChat.type === 'ai' ? (
@@ -798,24 +805,24 @@ export default function ChatWindow({ selectedChat }) {
             )}
           </div>
           <div>
-            <h2 className="text-white font-semibold">{selectedChat.name}</h2>
+            <h2 className="text-neutral-800 font-semibold">{selectedChat.name}</h2>
             {selectedChat.username && (
-              <p className="text-sm text-neutral-400">@{selectedChat.username}</p>
+              <p className="text-sm text-neutral-500">@{selectedChat.username}</p>
             )}
           </div>
         </div>
 
         {/* Messages */}
-        <ScrollArea className="flex-1 p-6" ref={scrollRef}>
+        <ScrollArea className="flex-1 p-6 glass-scroll" ref={scrollRef}>
           {/* Idle Warning Banner */}
           {selectedChat?.type === 'friend' && isChatIdle && (
-            <div className="mb-4 p-4 bg-yellow-900/20 border-2 border-yellow-600/50 rounded-lg">
+            <div className="mb-4 p-4 bg-yellow-50 border border-yellow-300 rounded-2xl shadow-lg shadow-yellow-500/10">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <span className="text-2xl">😴</span>
                   <div>
-                    <p className="text-sm font-semibold text-yellow-400">Chat Paused</p>
-                    <p className="text-xs text-yellow-300/80">No activity for 1 minute. Click refresh to resume.</p>
+                    <p className="text-sm font-semibold text-yellow-700">Chat Paused</p>
+                    <p className="text-xs text-yellow-600">No activity for 1 minute. Click refresh to resume.</p>
                   </div>
                 </div>
                 <Button
@@ -824,7 +831,7 @@ export default function ChatWindow({ selectedChat }) {
                     refreshFriendMessages();
                   }}
                   size="sm"
-                  className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                  className="bg-yellow-500 hover:bg-yellow-600 text-white rounded-xl shadow-md"
                 >
                   🔄 Refresh
                 </Button>
@@ -835,12 +842,12 @@ export default function ChatWindow({ selectedChat }) {
           {isLoading ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
-                <Loader2 className="h-12 w-12 animate-spin text-purple-400 mx-auto mb-4" />
-                <p className="text-neutral-400 text-sm">Loading messages...</p>
+                <Loader2 className="h-12 w-12 animate-spin text-purple-500 mx-auto mb-4" />
+                <p className="text-neutral-500 text-sm">Loading messages...</p>
               </div>
             </div>
           ) : messages.length === 0 ? (
-            <div className="flex items-center justify-center h-full text-neutral-400">
+            <div className="flex items-center justify-center h-full text-neutral-500">
               <div className="text-center">
                 <p>No messages yet</p>
                 <p className="text-sm mt-1">Start the conversation!</p>
@@ -877,23 +884,23 @@ export default function ChatWindow({ selectedChat }) {
           )}
         </ScrollArea>
 
-        {/* Input */}
-        <div className="p-4 bg-neutral-900 border-t border-neutral-800 relative">
+        {/* Input - Glass Style */}
+        <div className="p-4 glass-dark border-t border-black/5 relative">
           {/* Mention suggestions */}
           {showMentions && filteredFriends.length > 0 && (
-            <div className="absolute bottom-full left-4 right-4 mb-2 bg-neutral-800 border border-neutral-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+            <div className="absolute bottom-full left-4 right-4 mb-2 glass-card border border-purple-200/50 rounded-2xl shadow-xl shadow-purple-500/10 max-h-48 overflow-y-auto">
               {filteredFriends.map((friend) => (
                 <button
                   key={friend.address}
                   onClick={() => selectMention(friend.username)}
-                  className="w-full flex items-center gap-3 p-3 hover:bg-neutral-700 transition-colors text-left"
+                  className="w-full flex items-center gap-3 p-3 hover:bg-purple-50 transition-colors text-left first:rounded-t-2xl last:rounded-b-2xl"
                 >
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-green-500 flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-green-500 flex items-center justify-center flex-shrink-0 shadow-md">
                     <User className="h-4 w-4 text-white" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-white">{friend.displayName}</p>
-                    <p className="text-xs text-neutral-400">@{friend.username}</p>
+                    <p className="text-sm font-medium text-neutral-800">{friend.displayName}</p>
+                    <p className="text-xs text-neutral-500">@{friend.username}</p>
                   </div>
                 </button>
               ))}
@@ -902,31 +909,31 @@ export default function ChatWindow({ selectedChat }) {
 
           {/* Payment menu */}
           {showPaymentMenu && selectedChat?.type === 'friend' && (
-            <div className="absolute bottom-full left-4 mb-2 bg-neutral-800 border border-neutral-700 rounded-lg shadow-lg overflow-hidden">
+            <div className="absolute bottom-full left-4 mb-2 glass-card border border-purple-200/50 rounded-2xl shadow-xl shadow-purple-500/10 overflow-hidden">
               <button
                 onClick={() => handlePaymentAction('send')}
-                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-neutral-700 transition-colors text-left"
+                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-green-50 transition-colors text-left"
               >
-                <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center shadow-md shadow-green-500/30">
                   <Send className="h-4 w-4 text-white" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-white">Send SOL</p>
-                  <p className="text-xs text-neutral-400">Transfer SOL to this friend</p>
+                  <p className="text-sm font-medium text-neutral-800">Send SOL</p>
+                  <p className="text-xs text-neutral-500">Transfer SOL to this friend</p>
                 </div>
               </button>
               <button
                 onClick={() => handlePaymentAction('request')}
-                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-neutral-700 transition-colors text-left border-t border-neutral-700"
+                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-blue-50 transition-colors text-left border-t border-neutral-200/50"
               >
-                <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center shadow-md shadow-blue-500/30">
                   <svg className="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-white">Request SOL</p>
-                  <p className="text-xs text-neutral-400">Request payment from this friend</p>
+                  <p className="text-sm font-medium text-neutral-800">Request SOL</p>
+                  <p className="text-xs text-neutral-500">Request payment from this friend</p>
                 </div>
               </button>
             </div>
@@ -942,14 +949,14 @@ export default function ChatWindow({ selectedChat }) {
 
           {/* Voice Error Message */}
           {voiceError && (
-            <div className="mb-2 text-xs text-red-400 animate-pulse">
+            <div className="mb-2 text-xs text-red-500 animate-pulse">
               ⚠️ {voiceError}
             </div>
           )}
 
           {/* Listening Indicator */}
           {isListening && (
-            <div className="mb-2 text-xs text-purple-400 animate-pulse">
+            <div className="mb-2 text-xs text-purple-600 animate-pulse">
               🎤 Listening... Speak now
             </div>
           )}
@@ -959,7 +966,7 @@ export default function ChatWindow({ selectedChat }) {
             {selectedChat?.type === 'friend' && (
               <Button
                 onClick={() => setShowPaymentMenu(!showPaymentMenu)}
-                className="bg-neutral-800 hover:bg-neutral-700 border border-neutral-700"
+                className="glass-button rounded-xl"
                 size="icon"
               >
                 <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -974,7 +981,7 @@ export default function ChatWindow({ selectedChat }) {
               onChange={handleInputChange}
               onKeyPress={handleKeyPress}
               placeholder={selectedChat?.type === 'ai' ? "Type a command or message... (use @ to mention friends)" : "Type a message..."}
-              className="flex-1 bg-neutral-800 border-neutral-700 text-white"
+              className="flex-1"
               disabled={!connected || isSending}
             />
 
@@ -982,10 +989,10 @@ export default function ChatWindow({ selectedChat }) {
             <Button
               onClick={handleVoiceInput}
               disabled={!connected || isSending || isListening}
-              className={`${isListening
-                ? 'bg-red-600 hover:bg-red-700 animate-pulse'
-                : 'bg-purple-600 hover:bg-purple-700'
-                }`}
+              className={`rounded-xl ${isListening
+                ? 'bg-red-500 hover:bg-red-600 animate-pulse shadow-lg shadow-red-500/30'
+                : 'bg-purple-500 hover:bg-purple-600 shadow-lg shadow-purple-500/30'
+                } text-white`}
               title={voiceError || (isListening ? 'Listening...' : 'Voice Input')}
             >
               {isListening ? (
@@ -999,7 +1006,7 @@ export default function ChatWindow({ selectedChat }) {
             <Button
               onClick={handleSendMessage}
               disabled={!inputMessage.trim() || !connected || isSending}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600 rounded-xl shadow-lg shadow-purple-500/30 text-white"
             >
               {isSending ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
@@ -1027,10 +1034,10 @@ function MessageBubble({ message, isAI, friendAvatar, onConfirmTransfer, onCance
         {/* Avatar */}
         {!isMine && (
           <div className={`
-            w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden
+            w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden shadow-lg
             ${isAI
-              ? 'bg-gradient-to-br from-purple-500 to-cyan-500'
-              : 'bg-gradient-to-br from-blue-500 to-green-500'
+              ? 'bg-gradient-to-br from-purple-500/80 to-cyan-500/80 shadow-purple-500/20'
+              : 'bg-gradient-to-br from-blue-500/80 to-green-500/80 shadow-blue-500/20'
             }
           `}>
             {isAI ? (
@@ -1043,13 +1050,13 @@ function MessageBubble({ message, isAI, friendAvatar, onConfirmTransfer, onCance
           </div>
         )}
 
-        {/* Message */}
+        {/* Message - Glass Style */}
         <div>
           <div className={`
-            px-4 py-2 rounded-2xl
+            px-4 py-3 rounded-2xl backdrop-blur-sm
             ${isMine
-              ? 'bg-blue-600 text-white rounded-br-sm'
-              : 'bg-neutral-800 text-white rounded-bl-sm'
+              ? 'bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-br-md shadow-lg shadow-purple-500/20 border border-purple-400/20'
+              : 'glass text-neutral-800 rounded-bl-md border border-black/5'
             }
           `}>
             <p className="break-words whitespace-pre-line">{message.content}</p>
@@ -1060,7 +1067,7 @@ function MessageBubble({ message, isAI, friendAvatar, onConfirmTransfer, onCance
                 <Button
                   size="sm"
                   onClick={() => onPaymentRequestResponse(true, message.paymentRequestData.amount, message.paymentRequestData.requester)}
-                  className="bg-green-600 hover:bg-green-700 text-white"
+                  className="bg-green-500 hover:bg-green-600 text-white rounded-xl shadow-md shadow-green-500/30"
                 >
                   ✓ Accept & Send
                 </Button>
@@ -1068,7 +1075,7 @@ function MessageBubble({ message, isAI, friendAvatar, onConfirmTransfer, onCance
                   size="sm"
                   variant="outline"
                   onClick={() => onPaymentRequestResponse(false, message.paymentRequestData.amount, message.paymentRequestData.requester)}
-                  className="bg-red-600 hover:bg-red-700 border-red-600 text-white"
+                  className="bg-red-500 hover:bg-red-600 border-red-400 text-white rounded-xl shadow-md shadow-red-500/30"
                 >
                   ✗ Reject
                 </Button>
@@ -1096,7 +1103,7 @@ function MessageBubble({ message, isAI, friendAvatar, onConfirmTransfer, onCance
                     message.transferData.reason || 'Transfer',
                     message.transferData.category || 'other'
                   )}
-                  className="bg-green-600 hover:bg-green-700 text-white"
+                  className="bg-green-500 hover:bg-green-600 text-white rounded-xl shadow-md shadow-green-500/30"
                 >
                   ✓ Confirm Transfer
                 </Button>
@@ -1104,7 +1111,7 @@ function MessageBubble({ message, isAI, friendAvatar, onConfirmTransfer, onCance
                   size="sm"
                   variant="outline"
                   onClick={() => onCancelTransfer()}
-                  className="bg-neutral-700 hover:bg-neutral-600 border-neutral-600"
+                  className="bg-white/80 hover:bg-neutral-100 border-neutral-300 text-neutral-700 rounded-xl"
                 >
                   ✗ Cancel
                 </Button>
@@ -1138,10 +1145,10 @@ function CategorySelectionButtons({ transferData, onSelect }) {
         <button
           key={cat.id}
           onClick={() => onSelect(cat.id)}
-          className="p-3 rounded-xl border-2 border-neutral-700 bg-neutral-900 hover:border-purple-500 hover:bg-neutral-800 transition-all duration-200 flex flex-col items-center gap-1 hover:scale-105"
+          className="p-3 rounded-xl border border-neutral-200 bg-white/80 hover:border-purple-400 hover:bg-purple-50 transition-all duration-200 flex flex-col items-center gap-1 hover:scale-105 shadow-sm"
         >
           <span className="text-2xl">{cat.emoji}</span>
-          <span className="text-xs text-neutral-300 font-medium">{cat.name}</span>
+          <span className="text-xs text-neutral-600 font-medium">{cat.name}</span>
         </button>
       ))}
     </div>

@@ -36,10 +36,13 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-950">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-purple-50">
+      {/* Subtle animated background */}
+      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-purple-200/30 via-transparent to-transparent pointer-events-none" />
+      
       <Navbar />
       
-      <div className="flex h-[calc(100vh-64px)]">
+      <div className="flex h-[calc(100vh-64px)] relative">
         {/* 左侧边栏 */}
         <ChatSidebar
           friends={friends}

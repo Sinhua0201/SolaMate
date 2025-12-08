@@ -124,8 +124,8 @@ export function Navbar() {
   }
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-neutral-800/50 bg-black/90 backdrop-blur-md supports-[backdrop-filter]:bg-black/70">
-      <div className="container flex h-14 md:h-16 max-w-screen-2xl items-center justify-between px-4 mx-auto">
+    <header className="sticky top-0 z-50 w-full py-4 px-6">
+      <div className="container flex h-14 md:h-16 max-w-screen-xl items-center justify-between px-8 mx-auto bg-white/80 backdrop-blur-xl rounded-full shadow-xl shadow-purple-500/20 border-2 border-purple-200/50">
         <div className="flex items-center gap-2">
           {/* Mobile menu button */}
           <Sheet>
@@ -135,8 +135,8 @@ export function Navbar() {
                 <span className="sr-only">Toggle menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-80 bg-neutral-950 border-neutral-800/50">
-              <div className="flex items-center gap-1 mb-8">
+            <SheetContent side="left" className="w-80 glass-modal border-r border-white/10">
+              <div className="flex items-center gap-2 mb-8">
                 <Image
                   src="/favicon.ico"
                   alt="SolaMate Logo"
@@ -144,7 +144,7 @@ export function Navbar() {
                   height={28}
                   className="w-7 h-7"
                 />
-                <span className="font-bold text-lg text-neutral-100">
+                <span className="font-bold text-lg bg-gradient-to-r from-purple-600 via-cyan-500 to-purple-600 bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient">
                   SolaMate
                 </span>
               </div>
@@ -155,8 +155,8 @@ export function Navbar() {
                     key={link.href}
                     href={link.href}
                     className={`flex items-center gap-2 text-base font-medium transition-colors px-3 py-2 rounded-lg ${pathname === link.href
-                        ? "text-neutral-100 bg-neutral-800/50"
-                        : "text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/30"
+                        ? "text-purple-600 bg-purple-100/50"
+                        : "text-neutral-600 hover:text-neutral-800 hover:bg-black/5"
                       }`}
                   >
                     {link.name}
@@ -167,7 +167,7 @@ export function Navbar() {
           </Sheet>
 
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-1 hover:opacity-80 transition-opacity">
+          <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
             <Image
               src="/favicon.ico"
               alt="SolaMate Logo"
@@ -175,7 +175,7 @@ export function Navbar() {
               height={32}
               className="w-8 h-8"
             />
-            <span className="font-bold text-xl text-neutral-100">
+            <span className="font-bold text-xl bg-gradient-to-r from-purple-600 via-cyan-500 to-purple-600 bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient">
               SolaMate
             </span>
           </Link>
@@ -190,7 +190,7 @@ export function Navbar() {
                 variant="outline"
                 size="sm"
                 onClick={() => setIsFriendsOpen(true)}
-                className="bg-neutral-900/50 border-neutral-700 text-neutral-300 hover:bg-neutral-800 hover:text-white"
+                className="glass-button text-neutral-600 hover:text-neutral-800 rounded-full shadow-md"
               >
                 <Users className="h-4 w-4 mr-1" />
                 Friends
@@ -198,7 +198,7 @@ export function Navbar() {
               {/* Profile Avatar Button - Mobile */}
               <button
                 onClick={() => setIsProfileOpen(true)}
-                className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center overflow-hidden hover:opacity-80 transition-opacity border-2 border-neutral-700"
+                className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center overflow-hidden hover:scale-105 ios-transition border-2 border-white shadow-lg shadow-purple-500/30"
               >
                 {profile?.avatar ? (
                   <img src={getAvatarPath(profile.avatar)} alt="Profile" className="w-full h-full object-cover" />
@@ -219,8 +219,8 @@ export function Navbar() {
               key={link.href}
               href={link.href}
               className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${pathname === link.href
-                  ? "text-neutral-100"
-                  : "text-neutral-400 hover:text-neutral-200"
+                  ? "text-purple-600"
+                  : "text-neutral-600 hover:text-neutral-800"
                 }`}
             >
               {link.name}
@@ -235,7 +235,7 @@ export function Navbar() {
                   variant="outline"
                   size="sm"
                   onClick={() => setIsFriendsOpen(true)}
-                  className="bg-neutral-900/50 border-neutral-700 text-neutral-300 hover:bg-neutral-800 hover:text-white"
+                  className="glass-button text-neutral-600 hover:text-neutral-800 rounded-full shadow-md"
                 >
                   <Users className="h-4 w-4 mr-2" />
                   Friends
@@ -243,7 +243,7 @@ export function Navbar() {
                 {/* Profile Avatar Button */}
                 <button
                   onClick={() => setIsProfileOpen(true)}
-                  className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center overflow-hidden hover:opacity-80 transition-opacity border-2 border-neutral-700"
+                  className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center overflow-hidden hover:scale-105 ios-transition border-2 border-white shadow-lg shadow-purple-500/30"
                 >
                   {profile?.avatar ? (
                     <img src={getAvatarPath(profile.avatar)} alt="Profile" className="w-full h-full object-cover" />
@@ -359,9 +359,9 @@ export function Navbar() {
                       setAvatarDirection(-1)
                       setSelectedAvatarIndex((prev) => (prev - 1 + AVATAR_NAMES.length) % AVATAR_NAMES.length)
                     }}
-                    className="h-10 w-10 rounded-full bg-neutral-800 hover:bg-neutral-700 hover:scale-110 transition-transform"
+                    className="h-10 w-10 rounded-full glass-button border border-neutral-200 shadow-md hover:scale-110 transition-transform"
                   >
-                    <ChevronLeft className="h-6 w-6" />
+                    <ChevronLeft className="h-6 w-6 text-neutral-700" />
                   </Button>
 
                   {/* Avatar Display with 3D Rotation Effect */}
@@ -395,7 +395,7 @@ export function Navbar() {
                         style={{ transformStyle: "preserve-3d" }}
                       >
                         <motion.div 
-                          className="w-28 h-28 rounded-full border-4 border-purple-500 overflow-hidden bg-neutral-800 shadow-2xl"
+                          className="w-28 h-28 rounded-full border-4 border-purple-500 overflow-hidden bg-white shadow-2xl"
                           animate={{
                             boxShadow: [
                               "0 0 20px rgba(168, 85, 247, 0.4), 0 0 40px rgba(168, 85, 247, 0.2)",
@@ -429,9 +429,9 @@ export function Navbar() {
                       setAvatarDirection(1)
                       setSelectedAvatarIndex((prev) => (prev + 1) % AVATAR_NAMES.length)
                     }}
-                    className="h-10 w-10 rounded-full bg-neutral-800 hover:bg-neutral-700 hover:scale-110 transition-transform"
+                    className="h-10 w-10 rounded-full glass-button border border-neutral-200 shadow-md hover:scale-110 transition-transform"
                   >
-                    <ChevronRight className="h-6 w-6" />
+                    <ChevronRight className="h-6 w-6 text-neutral-700" />
                   </Button>
                 </div>
 
@@ -447,8 +447,8 @@ export function Navbar() {
                       }}
                       className={`rounded-full transition-all ${
                         index === selectedAvatarIndex
-                          ? "bg-gradient-to-r from-purple-500 to-cyan-500"
-                          : "bg-neutral-600 hover:bg-neutral-500"
+                          ? "bg-gradient-to-r from-purple-500 to-cyan-500 shadow-md shadow-purple-500/30"
+                          : "bg-neutral-300 hover:bg-neutral-400"
                       }`}
                       animate={{
                         width: index === selectedAvatarIndex ? 20 : 8,
@@ -466,7 +466,7 @@ export function Navbar() {
               </div>
             ) : (
               <div className="flex flex-col items-center gap-4">
-                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center overflow-hidden border-4 border-neutral-700">
+                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center overflow-hidden border-4 border-white shadow-xl shadow-purple-500/30">
                   {profile?.avatar ? (
                     <img src={getAvatarPath(profile.avatar)} alt="Profile" className="w-full h-full object-cover" />
                   ) : (
@@ -476,10 +476,10 @@ export function Navbar() {
 
                 {/* Username - View Mode */}
                 <div className="text-center">
-                  <h3 className="text-xl font-bold text-white">
+                  <h3 className="text-xl font-bold text-neutral-800">
                     {profile?.displayName || profile?.username || 'Anonymous'}
                   </h3>
-                  <p className="text-sm text-neutral-400">@{profile?.username || 'no_username'}</p>
+                  <p className="text-sm text-neutral-500">@{profile?.username || 'no_username'}</p>
                 </div>
               </div>
             )}
@@ -487,25 +487,25 @@ export function Navbar() {
             {/* Username Input - Edit Mode Only */}
             {isEditMode && (
               <div className="space-y-2">
-                <label className="text-sm font-medium text-neutral-300">Username</label>
+                <label className="text-sm font-medium text-neutral-700">Username</label>
                 <input
                   type="text"
                   value={editUsername}
                   onChange={(e) => setEditUsername(e.target.value)}
                   placeholder="Enter username"
-                  className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full bg-white/80 border border-black/10 rounded-xl px-3 py-2 text-neutral-800 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm"
                   maxLength={20}
                 />
-                <p className="text-xs text-neutral-400">3-20 characters (letters, numbers, underscore)</p>
+                <p className="text-xs text-neutral-500">3-20 characters (letters, numbers, underscore)</p>
               </div>
             )}
 
             {/* Wallet Address */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-neutral-400">Wallet Address</label>
+              <label className="text-sm font-medium text-neutral-600">Wallet Address</label>
               <div className="flex items-center gap-2">
-                <div className="flex-1 bg-neutral-800/50 rounded-lg p-3 border border-neutral-700">
-                  <p className="text-xs font-mono text-neutral-300 break-all">
+                <div className="flex-1 bg-white/60 rounded-xl p-3 border border-black/10 shadow-sm">
+                  <p className="text-xs font-mono text-neutral-600 break-all">
                     {userData.fullAddress}
                   </p>
                 </div>
@@ -516,9 +516,9 @@ export function Navbar() {
                   className="h-10 w-10 p-0"
                 >
                   {copiedAddress ? (
-                    <Check className="h-4 w-4 text-green-400" />
+                    <Check className="h-4 w-4 text-green-500" />
                   ) : (
-                    <Copy className="h-4 w-4 text-neutral-400" />
+                    <Copy className="h-4 w-4 text-neutral-500" />
                   )}
                 </Button>
               </div>
@@ -526,11 +526,11 @@ export function Navbar() {
 
             {/* SOL Balance */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-neutral-400">Balance</label>
-              <div className="bg-neutral-800/50 rounded-lg p-4 border border-neutral-700">
+              <label className="text-sm font-medium text-neutral-600">Balance</label>
+              <div className="bg-gradient-to-r from-purple-50 to-cyan-50 rounded-xl p-4 border border-purple-200/50 shadow-sm">
                 <div className="flex items-center justify-between">
-                  <span className="text-neutral-400">SOL</span>
-                  <span className="text-lg font-bold text-white">{userData.balances.SOL}</span>
+                  <span className="text-neutral-600">SOL</span>
+                  <span className="text-lg font-bold text-purple-600">{userData.balances.SOL}</span>
                 </div>
               </div>
             </div>
@@ -540,14 +540,14 @@ export function Navbar() {
               href={`https://explorer.solana.com/address/${userData.fullAddress}?cluster=devnet`}
               target="_blank"
               rel="noopener noreferrer"
-              className="block text-center text-sm text-blue-400 hover:text-blue-300"
+              className="block text-center text-sm text-purple-600 hover:text-purple-700"
             >
               View on Solana Explorer →
             </a>
 
             {/* Error Message */}
             {updateError && (
-              <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-3">
+              <div className="bg-red-50 border border-red-200 rounded-xl p-3">
                 <p className="text-xs text-red-400">{updateError}</p>
               </div>
             )}
@@ -589,7 +589,7 @@ export function Navbar() {
                   }
                 }}
                 disabled={isUpdating}
-                className="w-full bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700"
+                className="w-full bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600 text-white rounded-xl shadow-lg shadow-purple-500/30"
               >
                 {isUpdating ? "Saving..." : "Save Changes"}
               </Button>
@@ -605,7 +605,7 @@ export function Navbar() {
                   setUpdateError("")
                 }}
                 variant="outline"
-                className="w-full bg-neutral-800 border-neutral-700 text-neutral-300 hover:bg-neutral-700"
+                className="w-full bg-white/60 border border-neutral-200 text-neutral-700 hover:bg-white/80 rounded-xl"
               >
                 <Edit className="h-4 w-4 mr-2" />
                 Edit Profile

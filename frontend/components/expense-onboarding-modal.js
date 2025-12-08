@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { TrendingUp, Loader2, X, Check } from 'lucide-react';
 import { useInitializeExpenseStats } from '@/lib/solana/hooks/useExpenseProgram';
+import { toast } from 'sonner';
 
 /**
  * Expense Onboarding Modal
@@ -67,13 +68,19 @@ export function ExpenseOnboardingModal() {
                 setShowModal(false);
 
                 // 显示成功提示
-                alert('✅ Expense tracking enabled successfully!');
+                toast.success('✅ Expense tracking enabled!', {
+                    description: 'Your expenses will now be tracked on-chain',
+                });
             } else {
-                alert('❌ Failed to enable expense tracking. Please try again later.');
+                toast.error('Failed to enable expense tracking', {
+                    description: 'Please try again later',
+                });
             }
         } catch (err) {
             console.error('Error enabling expense tracking:', err);
-            alert('❌ Failed to enable expense tracking. Please try again later.');
+            toast.error('Failed to enable expense tracking', {
+                description: 'Please try again later',
+            });
         }
     };
 

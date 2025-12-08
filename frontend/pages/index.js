@@ -13,8 +13,12 @@ import { AuroraText } from "@/components/ui/aurora-text";
 export default function Home() {
   return (
     <div className="font-sans h-[100svh] overflow-hidden overscroll-none md:min-h-screen md:overflow-visible">
-      {/* Mobile-optimized Layout with Spotlight Effect */}
-      <div className="h-full w-full flex flex-col bg-black/[0.96] antialiased bg-grid-white/[0.02] relative overflow-hidden md:overflow-visible">
+      {/* Mobile-optimized Layout with Liquid Glass Effect - WHITE THEME */}
+      <div className="h-full w-full flex flex-col bg-gradient-to-br from-slate-50 via-white to-purple-50 antialiased relative overflow-hidden md:overflow-visible">
+        {/* Animated gradient background */}
+        <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-purple-200/40 via-transparent to-transparent pointer-events-none" />
+        <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_bottom_right,_var(--tw-gradient-stops))] from-cyan-200/30 via-transparent to-transparent pointer-events-none" />
+        
         {/* Navbar with wallet connection */}
         <Navbar />
         
@@ -36,8 +40,10 @@ export default function Home() {
               transition={{ duration: 0.5 }}
               className="text-center mb-4"
             >
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-neutral-50 to-neutral-400 mb-2">
-                Transfers made <AuroraText colors={["#ffffff", "#a8dadc", "#ffffff", "#e0e0e0", "#ffffff"]} speed={1.5}>easy</AuroraText>.
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-2">
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-neutral-800 via-neutral-700 to-neutral-800 bg-[length:200%_auto] animate-gradient">Transfers made </span>
+                <AuroraText colors={["#7c3aed", "#06b6d4", "#ec4899", "#7c3aed"]} speed={1.5}>easy</AuroraText>
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-neutral-800 via-neutral-700 to-neutral-800">.</span>
               </h1>
             </motion.div>
 
@@ -59,9 +65,9 @@ export default function Home() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5, delay: 0.6 }}
-            className="text-neutral-600 text-xs text-center mt-6 pb-4 hidden md:block"
+            className="text-neutral-500 text-xs text-center mt-6 pb-4 hidden md:block"
           >
-            <p>© 2025 LeftAI. All rights reserved.</p>
+            <p>© 2025 SolaMate. All rights reserved.</p>
           </motion.footer>
         </div>
       </div>

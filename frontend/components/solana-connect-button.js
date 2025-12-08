@@ -28,7 +28,7 @@ export function SolanaConnectButton() {
     return (
       <Button
         disabled
-        className="bg-gradient-to-r from-neutral-800 to-neutral-900 text-neutral-100 border border-neutral-700/50"
+        className="glass-button rounded-xl"
       >
         Loading...
       </Button>
@@ -38,7 +38,7 @@ export function SolanaConnectButton() {
   // Not connected - show connect button
   if (!connected && !connecting) {
     return (
-      <WalletMultiButton className="!bg-gradient-to-r !from-neutral-800 !to-neutral-900 hover:!from-neutral-700 hover:!to-neutral-800 !text-neutral-100 !border !border-neutral-700/50 !backdrop-blur-sm !transition-all !duration-200 !rounded-md !px-4 !py-2 !font-medium !text-sm">
+      <WalletMultiButton className="!bg-gradient-to-b !from-purple-500 !to-purple-600 !backdrop-blur-xl !border !border-purple-400/30 !text-white hover:!from-purple-600 hover:!to-purple-700 !transition-all !duration-300 !rounded-xl !px-4 !py-2 !font-medium !text-sm !shadow-lg !shadow-purple-500/20">
         Connect Wallet
       </WalletMultiButton>
     );
@@ -49,7 +49,7 @@ export function SolanaConnectButton() {
     return (
       <Button
         disabled
-        className="bg-gradient-to-r from-neutral-800 to-neutral-900 text-neutral-100 border border-neutral-700/50"
+        className="glass-button rounded-xl"
       >
         Connecting...
       </Button>
@@ -63,19 +63,19 @@ export function SolanaConnectButton() {
       <Button
         variant="ghost"
         size="sm"
-        className="hidden md:flex items-center gap-2 bg-neutral-900/50 hover:bg-neutral-800/50 text-neutral-300 border border-neutral-800/50 backdrop-blur-sm"
+        className="hidden md:flex items-center gap-2 glass rounded-xl"
         disabled
       >
-        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-        <span className="text-sm">Devnet</span>
+        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-lg shadow-green-500/50" />
+        <span className="text-sm text-neutral-600">Devnet</span>
       </Button>
 
       {/* Account button */}
       <Button
         onClick={() => disconnect()}
-        className="bg-gradient-to-r from-neutral-800 to-neutral-900 hover:from-neutral-700 hover:to-neutral-800 text-neutral-100 border border-neutral-700/50 backdrop-blur-sm transition-all duration-200"
+        className="glass-button rounded-xl ios-transition"
       >
-        <span className="bg-clip-text text-transparent bg-gradient-to-b from-neutral-50 to-neutral-400">
+        <span className="text-neutral-700">
           {formatAddress(publicKey)}
         </span>
       </Button>

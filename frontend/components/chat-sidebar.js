@@ -29,10 +29,10 @@ export default function ChatSidebar({ selectedChat, onSelectChat }) {
   };
 
   return (
-    <div className="w-80 bg-neutral-900 border-r border-neutral-800 flex flex-col">
+    <div className="w-80 glass-dark border-r border-black/5 flex flex-col">
       {/* Header */}
-      <div className="p-4 border-b border-neutral-800">
-        <h2 className="text-xl font-bold text-white mb-3">Chats</h2>
+      <div className="p-4 border-b border-black/5">
+        <h2 className="text-xl font-bold text-neutral-800 mb-3">Chats</h2>
 
         {/* Search */}
         <div className="relative">
@@ -41,13 +41,13 @@ export default function ChatSidebar({ selectedChat, onSelectChat }) {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search chats..."
-            className="pl-10 bg-neutral-800 border-neutral-700 text-white"
+            className="pl-10"
           />
         </div>
       </div>
 
       {/* Chat List */}
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1 glass-scroll">
         <div className="p-2">
           {/* AI Chat - Always first */}
           <ChatItem
@@ -58,11 +58,11 @@ export default function ChatSidebar({ selectedChat, onSelectChat }) {
 
           {/* Friends */}
           {isLoading ? (
-            <div className="text-center py-8 text-neutral-400">
+            <div className="text-center py-8 text-neutral-500">
               Loading chats...
             </div>
           ) : filteredFriends.length === 0 ? (
-            <div className="text-center py-8 text-neutral-400">
+            <div className="text-center py-8 text-neutral-500">
               <MessageCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
               <p>No chats yet</p>
               <p className="text-sm mt-1">Add friends to start chatting!</p>
@@ -101,19 +101,19 @@ function ChatItem({ chat, isSelected, onClick }) {
     <div
       onClick={onClick}
       className={`
-        flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors mb-1
+        flex items-center gap-3 p-3 rounded-2xl cursor-pointer ios-transition mb-2
         ${isSelected
-          ? 'bg-blue-600 text-white'
-          : 'hover:bg-neutral-800 text-neutral-300'
+          ? 'glass bg-purple-500/10 border border-purple-300/30 shadow-lg'
+          : 'hover:bg-black/5 text-neutral-600'
         }
       `}
     >
       {/* Avatar */}
       <div className={`
-        w-12 h-12 rounded-full flex items-center justify-center overflow-hidden
+        w-12 h-12 rounded-full flex items-center justify-center overflow-hidden shadow-lg
         ${chat.type === 'ai'
-          ? 'bg-gradient-to-br from-purple-500 to-cyan-500'
-          : 'bg-gradient-to-br from-blue-500 to-green-500'
+          ? 'bg-gradient-to-br from-purple-500 to-cyan-500 shadow-purple-500/20'
+          : 'bg-gradient-to-br from-blue-500 to-green-500 shadow-blue-500/20'
         }
       `}>
         {chat.type === 'ai' ? (
@@ -128,15 +128,15 @@ function ChatItem({ chat, isSelected, onClick }) {
       {/* Info */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between mb-1">
-          <h3 className="font-semibold truncate">{chat.name}</h3>
+          <h3 className="font-semibold truncate text-neutral-800">{chat.name}</h3>
           {chat.unread > 0 && (
-            <span className="bg-blue-600 text-white text-xs px-2 py-0.5 rounded-full">
+            <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full shadow-lg shadow-blue-500/30">
               {chat.unread}
             </span>
           )}
         </div>
         {chat.lastMessage && (
-          <p className="text-sm opacity-70 truncate">{chat.lastMessage}</p>
+          <p className="text-sm text-neutral-500 truncate">{chat.lastMessage}</p>
         )}
       </div>
     </div>

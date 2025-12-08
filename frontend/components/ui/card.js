@@ -2,14 +2,20 @@ import * as React from 'react';
 import { cn } from '@/lib/utils';
 
 /**
- * Card Component
- * Container component for grouping content
+ * Card Component - Liquid Glass Style WHITE THEME
+ * Container component for grouping content with iOS-style glass effect
  */
 const Card = React.forwardRef(({ className, ...props }, ref) => (
   <div
     ref={ref}
     className={cn(
-      'rounded-lg border bg-card text-card-foreground shadow-sm',
+      // Liquid Glass Effect - White Theme
+      'rounded-2xl',
+      'bg-gradient-to-b from-white/90 to-white/70',
+      'backdrop-blur-xl',
+      'border border-black/5',
+      'shadow-[0_8px_32px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,1)]',
+      'text-neutral-800',
       className
     )}
     {...props}

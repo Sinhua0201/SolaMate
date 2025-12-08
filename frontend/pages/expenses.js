@@ -203,13 +203,14 @@ export default function ExpensesPage() {
 
   if (!connected) {
     return (
-      <div className="min-h-screen bg-neutral-950">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-purple-50">
+        <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-purple-200/30 via-transparent to-transparent pointer-events-none" />
         <Navbar />
         <div className="flex items-center justify-center h-[calc(100vh-64px)]">
-          <Card className="bg-neutral-900 border-neutral-800 p-8 text-center">
+          <Card className="glass-card p-8 text-center rounded-3xl">
             <TrendingUp className="h-16 w-16 mx-auto mb-4 text-purple-500" />
-            <h2 className="text-2xl font-bold text-white mb-2">Connect Your Wallet</h2>
-            <p className="text-neutral-400">Track your expenses on the blockchain</p>
+            <h2 className="text-2xl font-bold text-neutral-800 mb-2">Connect Your Wallet</h2>
+            <p className="text-neutral-500">Track your expenses on the blockchain</p>
           </Card>
         </div>
       </div>
@@ -217,17 +218,18 @@ export default function ExpensesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-950">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-purple-50">
+      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-purple-200/30 via-transparent to-transparent pointer-events-none" />
       <Navbar />
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 relative">
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold text-white">💰 Expense Tracking</h1>
+          <h1 className="text-3xl font-bold text-neutral-800">💰 Expense Tracking</h1>
           {stats && (
             <Button
               onClick={loadExpenseData}
               disabled={isLoading}
-              className="bg-purple-600 hover:bg-purple-700"
+              className="glass-button bg-purple-500/30 hover:bg-purple-500/50 border-purple-400/30 rounded-xl"
             >
               {isLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -246,16 +248,16 @@ export default function ExpensesPage() {
             </p>
           </div>
         ) : needsInit ? (
-          <Card className="bg-neutral-900 border-neutral-800 p-8 text-center">
+          <Card className="glass-card p-8 text-center rounded-3xl">
             <AlertCircle className="h-16 w-16 mx-auto mb-4 text-red-500" />
-            <h2 className="text-2xl font-bold text-white mb-2">Initialization Failed</h2>
-            <p className="text-neutral-400 mb-6">
+            <h2 className="text-2xl font-bold text-neutral-800 mb-2">Initialization Failed</h2>
+            <p className="text-neutral-500 mb-6">
               Failed to initialize expense tracking automatically. Please try again.
             </p>
             <Button
               onClick={handleInitialize}
               disabled={isInitializing}
-              className="bg-purple-600 hover:bg-purple-700"
+              className="glass-button bg-purple-500/30 hover:bg-purple-500/50 border-purple-400/30 rounded-xl"
             >
               {isInitializing ? (
                 <>
@@ -268,10 +270,10 @@ export default function ExpensesPage() {
             </Button>
           </Card>
         ) : !stats || (stats.totalSpent === 0 && stats.recordCount === 0) ? (
-          <Card className="bg-neutral-900 border-neutral-800 p-8 text-center">
-            <TrendingUp className="h-16 w-16 mx-auto mb-4 text-purple-400" />
-            <h2 className="text-2xl font-bold text-white mb-2">No Expense Data Yet</h2>
-            <p className="text-neutral-400 mb-6">
+          <Card className="glass-card p-8 text-center rounded-3xl">
+            <TrendingUp className="h-16 w-16 mx-auto mb-4 text-purple-500" />
+            <h2 className="text-2xl font-bold text-neutral-800 mb-2">No Expense Data Yet</h2>
+            <p className="text-neutral-500 mb-6">
               Start making transfers to automatically track your expenses!
             </p>
 
@@ -311,8 +313,8 @@ export default function ExpensesPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left: Pie Chart */}
             <div className="lg:col-span-1">
-              <Card className="bg-neutral-900 border-neutral-800 p-6">
-                <h3 className="text-lg font-bold text-white mb-4">Spending by Category</h3>
+              <Card className="glass-card p-6 rounded-3xl border border-purple-200/50 shadow-xl shadow-purple-500/10">
+                <h3 className="text-lg font-bold text-neutral-800 mb-4">Spending by Category</h3>
                 <PieChart data={getCategoryData()} />
 
                 {/* Category Legend */}
@@ -320,10 +322,10 @@ export default function ExpensesPage() {
                   {getCategoryData().map((item) => (
                     <div key={item.category} className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
-                        <span className="text-sm text-neutral-300">{item.category}</span>
+                        <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: item.color }} />
+                        <span className="text-sm text-neutral-600">{item.category}</span>
                       </div>
-                      <span className="text-sm font-semibold text-white">
+                      <span className="text-sm font-semibold text-neutral-800">
                         {(item.value / 1e9).toFixed(2)} SOL
                       </span>
                     </div>
@@ -331,10 +333,10 @@ export default function ExpensesPage() {
                 </div>
 
                 {/* Total */}
-                <div className="mt-4 pt-4 border-t border-neutral-800">
+                <div className="mt-4 pt-4 border-t border-neutral-200">
                   <div className="flex items-center justify-between">
-                    <span className="text-white font-bold">Total Spent</span>
-                    <span className="text-xl font-bold text-purple-400">
+                    <span className="text-neutral-800 font-bold">Total Spent</span>
+                    <span className="text-xl font-bold text-purple-600">
                       {(stats.totalSpent / 1e9).toFixed(2)} SOL
                     </span>
                   </div>
@@ -345,14 +347,16 @@ export default function ExpensesPage() {
             {/* Right: Records List */}
             <div className="lg:col-span-2">
               {/* Filters */}
-              <Card className="bg-neutral-900 border-neutral-800 p-4 mb-4">
+              <Card className="glass-card p-4 mb-4 rounded-2xl border border-purple-200/50 shadow-lg shadow-purple-500/5">
                 <div className="flex flex-wrap gap-2 mb-3">
                   {TIME_FILTERS.map((filter) => (
                     <Button
                       key={filter.id}
                       size="sm"
                       onClick={() => setTimeFilter(filter.id)}
-                      className={timeFilter === filter.id ? 'bg-purple-600' : 'bg-neutral-800'}
+                      className={timeFilter === filter.id 
+                        ? 'bg-purple-600 text-white shadow-md shadow-purple-500/30' 
+                        : 'bg-white/60 text-neutral-700 border border-neutral-200 hover:bg-white/80'}
                     >
                       {filter.label}
                     </Button>
@@ -365,13 +369,13 @@ export default function ExpensesPage() {
                       type="date"
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
-                      className="bg-neutral-800 border-neutral-700 text-white"
+                      className="bg-white/60 border-neutral-200 text-neutral-800"
                     />
                     <Input
                       type="date"
                       value={endDate}
                       onChange={(e) => setEndDate(e.target.value)}
-                      className="bg-neutral-800 border-neutral-700 text-white"
+                      className="bg-white/60 border-neutral-200 text-neutral-800"
                     />
                   </div>
                 )}
@@ -380,7 +384,9 @@ export default function ExpensesPage() {
                   <Button
                     size="sm"
                     onClick={() => setCategoryFilter('all')}
-                    className={categoryFilter === 'all' ? 'bg-purple-600' : 'bg-neutral-800'}
+                    className={categoryFilter === 'all' 
+                      ? 'bg-purple-600 text-white shadow-md shadow-purple-500/30' 
+                      : 'bg-white/60 text-neutral-700 border border-neutral-200 hover:bg-white/80'}
                   >
                     All
                   </Button>
@@ -389,7 +395,9 @@ export default function ExpensesPage() {
                       key={cat.id}
                       size="sm"
                       onClick={() => setCategoryFilter(cat.id)}
-                      className={categoryFilter === cat.id ? 'bg-purple-600' : 'bg-neutral-800'}
+                      className={categoryFilter === cat.id 
+                        ? 'bg-purple-600 text-white shadow-md shadow-purple-500/30' 
+                        : 'bg-white/60 text-neutral-700 border border-neutral-200 hover:bg-white/80'}
                     >
                       {cat.emoji}
                     </Button>
@@ -398,41 +406,41 @@ export default function ExpensesPage() {
               </Card>
 
               {/* Records */}
-              <Card className="bg-neutral-900 border-neutral-800 p-6">
-                <h3 className="text-lg font-bold text-white mb-4">
+              <Card className="glass-card p-6 rounded-3xl border border-purple-200/50 shadow-xl shadow-purple-500/10">
+                <h3 className="text-lg font-bold text-neutral-800 mb-4">
                   Transaction History ({records.length})
                 </h3>
 
                 {records.length === 0 ? (
-                  <p className="text-center text-neutral-400 py-8">No transactions found</p>
+                  <p className="text-center text-neutral-500 py-8">No transactions found</p>
                 ) : (
                   <div className="space-y-3 max-h-[600px] overflow-y-auto">
                     {records.map((record) => {
                       const category = CATEGORIES.find(c => c.id === record.category.toLowerCase());
                       return (
-                        <div key={record.publicKey} className="bg-neutral-800/50 rounded-lg p-4">
+                        <div key={record.publicKey} className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-neutral-200/50 shadow-sm hover:shadow-md transition-shadow">
                           <div className="flex items-start justify-between">
                             <div className="flex items-start gap-3 flex-1">
                               <div className="text-2xl">{category?.emoji || '📦'}</div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-white font-medium">{record.description}</p>
-                                <p className="text-sm text-neutral-400">
+                                <p className="text-neutral-800 font-medium">{record.description}</p>
+                                <p className="text-sm text-neutral-500">
                                   {category?.name || 'Other'}
                                 </p>
-                                <p className="text-xs text-neutral-500 mt-1">
+                                <p className="text-xs text-neutral-400 mt-1">
                                   {new Date(record.timestamp).toLocaleString()}
                                 </p>
                               </div>
                             </div>
                             <div className="text-right">
-                              <p className="text-lg font-bold text-red-400">
+                              <p className="text-lg font-bold text-red-500">
                                 -{(record.amount / 1e9).toFixed(4)} SOL
                               </p>
                               <a
                                 href={`https://explorer.solana.com/tx/${record.txSignature}?cluster=devnet`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-xs text-blue-400 hover:underline"
+                                className="text-xs text-purple-600 hover:underline"
                               >
                                 View TX
                               </a>
@@ -457,7 +465,7 @@ function PieChart({ data }) {
 
   if (!data || data.length === 0) {
     return (
-      <div className="w-full aspect-square flex items-center justify-center bg-neutral-800 rounded-lg">
+      <div className="w-full aspect-square flex items-center justify-center bg-neutral-100 rounded-xl border border-neutral-200">
         <p className="text-neutral-500">No data</p>
       </div>
     );
@@ -466,7 +474,6 @@ function PieChart({ data }) {
   const total = data.reduce((sum, item) => sum + item.value, 0);
   let currentAngle = 0;
 
-  // 计算每个扇形的路径和角度
   const slices = data.map((item, index) => {
     const percentage = item.value / total;
     const angle = percentage * 360;
@@ -490,19 +497,20 @@ function PieChart({ data }) {
 
   return (
     <div className="relative w-full aspect-square">
-      <svg viewBox="0 0 200 200" className="w-full h-full">
+      <svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-lg">
         {slices.map((slice) => (
           <path
             key={slice.index}
             d={slice.path}
             fill={slice.color}
-            stroke="#171717"
+            stroke="white"
             strokeWidth="2"
             className="cursor-pointer transition-all duration-200"
             style={{
               transform: hoveredIndex === slice.index ? 'scale(1.05)' : 'scale(1)',
               transformOrigin: 'center',
               opacity: hoveredIndex !== null && hoveredIndex !== slice.index ? 0.5 : 1,
+              filter: hoveredIndex === slice.index ? 'drop-shadow(0 4px 6px rgba(0,0,0,0.2))' : 'none',
             }}
             onMouseEnter={() => setHoveredIndex(slice.index)}
             onMouseLeave={() => setHoveredIndex(null)}
@@ -510,29 +518,29 @@ function PieChart({ data }) {
         ))}
 
         {/* Center circle */}
-        <circle cx="100" cy="100" r="50" fill="#171717" />
+        <circle cx="100" cy="100" r="50" fill="white" className="drop-shadow-md" />
 
         {hoveredItem ? (
           <>
-            <text x="100" y="90" textAnchor="middle" className="fill-white text-xs font-bold">
+            <text x="100" y="90" textAnchor="middle" className="fill-neutral-800 text-xs font-bold">
               {hoveredItem.category}
             </text>
-            <text x="100" y="108" textAnchor="middle" className="fill-purple-400 text-sm font-bold">
+            <text x="100" y="108" textAnchor="middle" className="fill-purple-600 text-sm font-bold">
               {(hoveredItem.value / 1e9).toFixed(2)} SOL
             </text>
-            <text x="100" y="122" textAnchor="middle" className="fill-neutral-400 text-xs">
+            <text x="100" y="122" textAnchor="middle" className="fill-neutral-500 text-xs">
               {(hoveredItem.percentage * 100).toFixed(1)}%
             </text>
           </>
         ) : (
           <>
-            <text x="100" y="95" textAnchor="middle" className="fill-white text-xs font-bold">
+            <text x="100" y="95" textAnchor="middle" className="fill-neutral-800 text-xs font-bold">
               Total
             </text>
-            <text x="100" y="110" textAnchor="middle" className="fill-purple-400 text-sm font-bold">
+            <text x="100" y="110" textAnchor="middle" className="fill-purple-600 text-sm font-bold">
               {(total / 1e9).toFixed(2)}
             </text>
-            <text x="100" y="122" textAnchor="middle" className="fill-neutral-400 text-xs">
+            <text x="100" y="122" textAnchor="middle" className="fill-neutral-500 text-xs">
               SOL
             </text>
           </>
