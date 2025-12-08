@@ -18,7 +18,9 @@ export default function ChatWindow({ selectedChat }) {
   const {
     messages: friendMessages,
     isLoading: isFriendMessagesLoading,
-    refresh: refreshFriendMessages
+    refresh: refreshFriendMessages,
+    isIdle: isChatIdle,
+    resetActivity: resetChatActivity
   } = useRealtimeChatWebSocket(selectedChat?.type === 'friend' ? selectedChat?.id : null);
 
   // 根据聊天类型选择消息源
@@ -791,6 +793,31 @@ export default function ChatWindow({ selectedChat }) {
 
         {/* Messages */}
         <ScrollArea className="flex-1 p-6" ref={scrollRef}>
+          {/* Idle Warning Banner */}
+          {selectedChat?.type === 'friend' && isChatIdle && (
+            <div className="mb-4 p-4 bg-yellow-900/20 border-2 border-yellow-600/50 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">😴</span>
+                  <div>
+                    <p className="text-sm font-semibold text-yellow-400">Chat Paused</p>
+                    <p className="text-xs text-yellow-300/80">No activity for 1 minute. Click refresh to resume.</p>
+                  </div>
+                </div>
+                <Button
+                  onClick={() => {
+                    resetChatActivity();
+                    refreshFriendMessages();
+                  }}
+                  size="sm"
+                  className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                >
+                  🔄 Refresh
+                </Button>
+              </div>
+            </div>
+          )}
+
           {isLoadingMessages ? (
             <div className="flex items-center justify-center h-full">
               <Loader2 className="h-8 w-8 animate-spin text-neutral-400" />

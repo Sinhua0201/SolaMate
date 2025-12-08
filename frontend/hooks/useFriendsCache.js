@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { getProgram } from '@/lib/solana/anchorSetup';
+import { useIdleDetection } from './useIdleDetection';
 
 // 全局缓存，在所有组件间共享
 let globalFriendsCache = null;
+let globalPendingCache = null;
 let globalCacheTimestamp = 0;
 const CACHE_DURATION = 30000; // 30 秒缓存
 
@@ -14,8 +16,10 @@ const CACHE_DURATION = 30000; // 30 秒缓存
 export function useFriendsCache() {
     const { publicKey, connected } = useWallet();
     const [friends, setFriends] = useState([]);
+    const [pendingRequests, setPendingRequests] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const loadingRef = useRef(false);
+    const { isIdle, resetActivity } = useIdleDetection(60000); // 60秒空闲
 
     const loadFriends = useCallback(async (forceRefresh = false) => {
         if (!publicKey || !connected) return;
@@ -25,6 +29,7 @@ export function useFriendsCache() {
         if (!forceRefresh && globalFriendsCache && (now - globalCacheTimestamp) < CACHE_DURATION) {
             console.log('✅ Using cached friends data');
             setFriends(globalFriendsCache);
+            setPendingRequests(globalPendingCache || []);
             return;
         }
 
@@ -98,10 +103,12 @@ export function useFriendsCache() {
 
             // 更新全局缓存
             globalFriendsCache = acceptedFriends;
+            globalPendingCache = pendingRequests;
             globalCacheTimestamp = Date.now();
 
             setFriends(acceptedFriends);
-            console.log(`✅ Friends loaded: ${acceptedFriends.length} friends`);
+            setPendingRequests(pendingRequests);
+            console.log(`✅ Friends loaded: ${acceptedFriends.length} friends, ${pendingRequests.length} pending`);
         } catch (err) {
             console.error('Error loading friends:', err);
         } finally {
@@ -111,18 +118,22 @@ export function useFriendsCache() {
     }, [publicKey, connected]);
 
     useEffect(() => {
-        if (connected && publicKey) {
+        if (connected && publicKey && !isIdle) {
             loadFriends();
         }
-    }, [connected, publicKey, loadFriends]);
+    }, [connected, publicKey, loadFriends, isIdle]);
 
     const refresh = useCallback(() => {
+        resetActivity(); // 重置空闲状态
         loadFriends(true);
-    }, [loadFriends]);
+    }, [loadFriends, resetActivity]);
 
     return {
         friends,
+        pendingRequests,
         isLoading,
         refresh,
+        isIdle, // 返回空闲状态
+        resetActivity, // 返回重置函数
     };
 }

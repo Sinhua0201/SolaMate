@@ -28,8 +28,7 @@ export function FriendsModal({ isOpen, onClose }) {
   const { acceptFriendRequest, isLoading: isAccepting } = useAcceptFriendRequest()
 
   // 使用共享缓存的好友数据
-  const { friends, isLoading, refresh } = useFriendsCache()
-  const pendingRequests = [] // TODO: 添加待处理请求支持
+  const { friends, pendingRequests, isLoading, refresh, isIdle, resetActivity } = useFriendsCache()
 
   const userAddress = publicKey?.toString()
 
@@ -127,6 +126,31 @@ export function FriendsModal({ isOpen, onClose }) {
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Idle Warning Banner */}
+          {isIdle && (
+            <div className="p-3 bg-yellow-900/20 border-2 border-yellow-600/50 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">😴</span>
+                  <div>
+                    <p className="text-xs font-semibold text-yellow-400">Updates Paused</p>
+                    <p className="text-xs text-yellow-300/80">No activity for 1 minute</p>
+                  </div>
+                </div>
+                <Button
+                  onClick={() => {
+                    resetActivity();
+                    refresh();
+                  }}
+                  size="sm"
+                  className="bg-yellow-600 hover:bg-yellow-700 text-white h-8"
+                >
+                  🔄 Refresh
+                </Button>
+              </div>
+            </div>
+          )}
+
           {/* 添加好友 */}
           <Card className="bg-neutral-800/50 border-neutral-700 p-4">
             <h3 className="text-sm font-semibold text-white mb-3">Add Friend</h3>

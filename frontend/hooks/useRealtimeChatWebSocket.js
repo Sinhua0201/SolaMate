@@ -3,15 +3,17 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { getProgram } from '@/lib/solana/anchorSetup';
 import { getChatRoomPDA } from '@/lib/solana/pdaHelpers';
+import { useIdleDetection } from './useIdleDetection';
 
 /**
  * useRealtimeChatWebSocket Hook
- * 使用智能轮询实时监听好友聊天消息（优化版）
+ * 使用智能轮询实时监听好友聊天消息（优化版 + 空闲检测）
  */
 export function useRealtimeChatWebSocket(friendAddress) {
     const { publicKey, connected } = useWallet();
     const [messages, setMessages] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
+    const { isIdle, resetActivity } = useIdleDetection(60000); // 60秒空闲
 
     // 加载消息（客户端直接调用，带本地缓存）
     const loadMessages = useCallback(async () => {
@@ -104,14 +106,16 @@ export function useRealtimeChatWebSocket(friendAddress) {
             if (intervalId) return;
 
             intervalId = setInterval(() => {
-                // 只在页面可见时轮询
-                if (document.visibilityState === 'visible') {
+                // 只在页面可见且用户活跃时轮询
+                if (document.visibilityState === 'visible' && !isIdle) {
                     console.log('🔄 Polling for new messages...');
                     loadMessages();
+                } else if (isIdle) {
+                    console.log('😴 User idle, skipping poll');
                 }
             }, POLLING_INTERVAL);
 
-            console.log('📡 Chat polling started (every 5s, only when visible)');
+            console.log('📡 Chat polling started (every 5s, only when visible and active)');
         };
 
         const stopPolling = () => {
@@ -142,16 +146,19 @@ export function useRealtimeChatWebSocket(friendAddress) {
             stopPolling();
             document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
-    }, [publicKey, connected, friendAddress, loadMessages]);
+    }, [publicKey, connected, friendAddress, loadMessages, isIdle]);
 
-    // 手动刷新函数
+    // 手动刷新函数（同时重置空闲状态）
     const refresh = useCallback(() => {
+        resetActivity(); // 重置空闲状态
         loadMessages();
-    }, [loadMessages]);
+    }, [loadMessages, resetActivity]);
 
     return {
         messages,
         isLoading,
         refresh,
+        isIdle, // 返回空闲状态
+        resetActivity, // 返回重置函数
     };
 }
