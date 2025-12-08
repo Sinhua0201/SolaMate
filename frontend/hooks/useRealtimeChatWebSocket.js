@@ -16,10 +16,13 @@ export function useRealtimeChatWebSocket(friendAddress) {
     const { isIdle, resetActivity } = useIdleDetection(60000); // 60秒空闲
 
     // 加载消息（客户端直接调用，带本地缓存）
-    const loadMessages = useCallback(async () => {
+    const loadMessages = useCallback(async (showLoading = false) => {
         if (!publicKey || !connected || !friendAddress) return;
 
-        setIsLoading(true);
+        // 只在初始加载或手动刷新时显示 loading
+        if (showLoading) {
+            setIsLoading(true);
+        }
         const startTime = Date.now();
 
         try {
@@ -89,13 +92,16 @@ export function useRealtimeChatWebSocket(friendAddress) {
             console.error('Error loading messages:', err);
             setMessages([]);
         } finally {
-            // 确保 loading 至少显示 300ms，让用户看到
-            const elapsed = Date.now() - startTime;
-            const minLoadingTime = 300;
-            if (elapsed < minLoadingTime) {
-                setTimeout(() => setIsLoading(false), minLoadingTime - elapsed);
-            } else {
-                setIsLoading(false);
+            // 只在显示了 loading 时才需要隐藏
+            if (showLoading) {
+                // 确保 loading 至少显示 300ms，让用户看到
+                const elapsed = Date.now() - startTime;
+                const minLoadingTime = 300;
+                if (elapsed < minLoadingTime) {
+                    setTimeout(() => setIsLoading(false), minLoadingTime - elapsed);
+                } else {
+                    setIsLoading(false);
+                }
             }
         }
     }, [publicKey, connected, friendAddress]);
@@ -104,8 +110,8 @@ export function useRealtimeChatWebSocket(friendAddress) {
     useEffect(() => {
         if (!publicKey || !connected || !friendAddress) return;
 
-        // 初始加载
-        loadMessages();
+        // 初始加载（显示 loading）
+        loadMessages(true);
 
         // 智能轮询配置（使用 API 后可以更频繁）
         const POLLING_INTERVAL = 5000; // 5 秒（API 有缓存，可以更快）
@@ -118,7 +124,7 @@ export function useRealtimeChatWebSocket(friendAddress) {
                 // 只在页面可见且用户活跃时轮询
                 if (document.visibilityState === 'visible' && !isIdle) {
                     console.log('🔄 Polling for new messages...');
-                    loadMessages();
+                    loadMessages(false); // 轮询时不显示 loading
                 } else if (isIdle) {
                     console.log('😴 User idle, skipping poll');
                 }
@@ -139,7 +145,7 @@ export function useRealtimeChatWebSocket(friendAddress) {
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'visible') {
                 console.log('👁️ Page visible, resuming polling');
-                loadMessages(); // 立即加载
+                loadMessages(false); // 立即加载，但不显示 loading
                 startPolling();
             } else {
                 console.log('🙈 Page hidden, pausing polling');
@@ -160,7 +166,7 @@ export function useRealtimeChatWebSocket(friendAddress) {
     // 手动刷新函数（同时重置空闲状态）
     const refresh = useCallback(() => {
         resetActivity(); // 重置空闲状态
-        loadMessages();
+        loadMessages(false); // 手动刷新不显示 loading（已经有刷新按钮了）
     }, [loadMessages, resetActivity]);
 
     return {
