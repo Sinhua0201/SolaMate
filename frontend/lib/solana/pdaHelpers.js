@@ -24,7 +24,7 @@ export function getUserProfilePDA(userPublicKey) {
  */
 export function getFriendshipPDA(userAPublicKey, userBPublicKey) {
   // 确保地址按字母序排列
-  const [minKey, maxKey] = 
+  const [minKey, maxKey] =
     userAPublicKey.toString() < userBPublicKey.toString()
       ? [userAPublicKey, userBPublicKey]
       : [userBPublicKey, userAPublicKey];
@@ -44,7 +44,7 @@ export function getFriendshipPDA(userAPublicKey, userBPublicKey) {
  */
 export function getChatRoomPDA(userAPublicKey, userBPublicKey) {
   // 确保地址按字母序排列
-  const [minKey, maxKey] = 
+  const [minKey, maxKey] =
     userAPublicKey.toString() < userBPublicKey.toString()
       ? [userAPublicKey, userBPublicKey]
       : [userBPublicKey, userAPublicKey];
@@ -63,8 +63,14 @@ export function getChatRoomPDA(userAPublicKey, userBPublicKey) {
  * 获取消息 PDA
  */
 export function getMessagePDA(chatRoomPublicKey, messageIndex) {
+  // 手动创建 8 字节的 little-endian buffer
   const indexBuffer = Buffer.alloc(8);
-  indexBuffer.writeBigUInt64LE(BigInt(messageIndex));
+  const bigIntValue = BigInt(messageIndex);
+
+  // 手动写入 BigUInt64LE（浏览器兼容）
+  for (let i = 0; i < 8; i++) {
+    indexBuffer[i] = Number((bigIntValue >> BigInt(i * 8)) & BigInt(0xff));
+  }
 
   return PublicKey.findProgramAddressSync(
     [
@@ -90,8 +96,14 @@ export function getExpenseStatsPDA(userPublicKey) {
  * 获取消费记录 PDA
  */
 export function getExpenseRecordPDA(userPublicKey, recordIndex) {
+  // 手动创建 8 字节的 little-endian buffer
   const indexBuffer = Buffer.alloc(8);
-  indexBuffer.writeBigUInt64LE(BigInt(recordIndex));
+  const bigIntValue = BigInt(recordIndex);
+
+  // 手动写入 BigUInt64LE（浏览器兼容）
+  for (let i = 0; i < 8; i++) {
+    indexBuffer[i] = Number((bigIntValue >> BigInt(i * 8)) & BigInt(0xff));
+  }
 
   return PublicKey.findProgramAddressSync(
     [

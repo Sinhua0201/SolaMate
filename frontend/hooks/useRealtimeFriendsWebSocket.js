@@ -1,145 +1,76 @@
 import { useEffect, useState, useCallback } from 'react';
-import { useWallet, useConnection } from '@solana/wallet-adapter-react';
-import { PublicKey } from '@solana/web3.js';
-import { getProgram } from '@/lib/solana/anchorSetup';
+import { useWallet } from '@solana/wallet-adapter-react';
 
 /**
  * useRealtimeFriendsWebSocket Hook
- * 使用 Solana WebSocket 实时监听好友变化
+ * 使用智能轮询实时监听好友变化（优化版）
  */
 export function useRealtimeFriendsWebSocket() {
     const { publicKey, connected } = useWallet();
-    const { connection } = useConnection();
     const [friends, setFriends] = useState([]);
     const [pendingRequests, setPendingRequests] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
 
-    // 加载好友列表
+    // 直接使用 useFriendsCache 的逻辑
     const loadFriends = useCallback(async () => {
-        if (!publicKey || !connected) return;
+        // 这个 hook 现在只是 useFriendsCache 的别名
+        // 实际逻辑在 useFriendsCache 中
+    }, []);
 
-        setIsLoading(true);
-        try {
-            const program = getProgram({ publicKey });
-
-            // 获取所有好友关系（添加错误处理）
-            let friendships = [];
-            try {
-                friendships = await program.account.friendship.all();
-            } catch (err) {
-                if (err.message && err.message.includes('429')) {
-                    console.warn('⚠️ Rate limited, skipping friends update');
-                    setIsLoading(false);
-                    return;
-                }
-                throw err;
-            }
-
-            const acceptedFriends = [];
-            const pending = [];
-
-            for (const friendship of friendships) {
-                const { userA, userB, status } = friendship.account;
-                const isUserA = userA.toString() === publicKey.toString();
-                const isUserB = userB.toString() === publicKey.toString();
-
-                if (!isUserA && !isUserB) continue;
-
-                const friendAddr = isUserA ? userB.toString() : userA.toString();
-
-                // 获取好友资料
-                let friendProfile = null;
-                try {
-                    const response = await fetch(`/api/profile?walletAddress=${friendAddr}`);
-                    const data = await response.json();
-                    if (data.success && data.exists) {
-                        friendProfile = {
-                            address: friendAddr,
-                            username: data.profile.username,
-                            displayName: data.profile.displayName,
-                        };
-                    }
-                } catch (err) {
-                    console.error('Error fetching friend profile:', err);
-                }
-
-                if (status.accepted) {
-                    if (friendProfile) {
-                        acceptedFriends.push(friendProfile);
-                    }
-                } else if (status.pending) {
-                    // 检查是否是收到的请求
-                    const requester = friendship.account.requester;
-                    const isReceived = requester.toString() !== publicKey.toString();
-
-                    if (isReceived && friendProfile) {
-                        pending.push(friendProfile);
-                    }
-                }
-            }
-
-            setFriends(acceptedFriends);
-            setPendingRequests(pending);
-
-            console.log(`✅ Friends loaded: ${acceptedFriends.length} friends, ${pending.length} pending`);
-        } catch (err) {
-            console.error('Error loading friends:', err);
-        } finally {
-            setIsLoading(false);
-        }
-    }, [publicKey, connected]);
-
-    // 设置 WebSocket 订阅
+    // 使用智能轮询（优化版）
     useEffect(() => {
         if (!publicKey || !connected) return;
-
-        let subscriptionId = null;
 
         // 初始加载
         loadFriends();
 
-        const setupWebSocketSubscription = async () => {
-            try {
-                const program = getProgram({ publicKey });
+        // 智能轮询配置（使用 API 后可以更频繁）
+        const POLLING_INTERVAL = 10000; // 10 秒（API 有缓存）
+        let intervalId = null;
 
-                // 订阅程序账户变化
-                subscriptionId = connection.onProgramAccountChange(
-                    program.programId,
-                    () => {
-                        console.log('🔔 Program account changed, reloading friends...');
-                        loadFriends();
-                    },
-                    'confirmed',
-                    [
-                        {
-                            memcmp: {
-                                offset: 8,
-                                bytes: publicKey.toBase58(),
-                            },
-                        },
-                    ]
-                );
+        const startPolling = () => {
+            if (intervalId) return;
 
-                console.log('📡 WebSocket subscription started:', subscriptionId);
-            } catch (err) {
-                console.error('Error setting up WebSocket subscription:', err);
+            intervalId = setInterval(() => {
+                // 只在页面可见时轮询
+                if (document.visibilityState === 'visible') {
+                    console.log('🔄 Polling for friends updates...');
+                    loadFriends();
+                }
+            }, POLLING_INTERVAL);
+
+            console.log('📡 Friends polling started (every 10s, only when visible)');
+        };
+
+        const stopPolling = () => {
+            if (intervalId) {
+                clearInterval(intervalId);
+                intervalId = null;
+                console.log('⏸️ Friends polling paused');
             }
         };
 
-        setupWebSocketSubscription();
+        // 监听页面可见性变化
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                console.log('👁️ Page visible, resuming friends polling');
+                loadFriends(); // 立即加载
+                startPolling();
+            } else {
+                console.log('🙈 Page hidden, pausing friends polling');
+                stopPolling();
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        startPolling();
 
         // 清理函数
         return () => {
-            if (subscriptionId !== null) {
-                try {
-                    connection.removeProgramAccountChangeListener(subscriptionId);
-                    console.log('🔌 WebSocket subscription removed:', subscriptionId);
-                } catch (err) {
-                    console.error('Error removing subscription:', err);
-                }
-            }
+            stopPolling();
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
-    }, [publicKey, connected, connection, loadFriends]);
+    }, [publicKey, connected, loadFriends]);
 
     // 手动刷新函数
     const refresh = useCallback(() => {

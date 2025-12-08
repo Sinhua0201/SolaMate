@@ -11,7 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Card } from "@/components/ui/card"
 import { UserPlus, Check, X, MessageCircle, User, Copy } from "lucide-react"
 import { useSendFriendRequest, useAcceptFriendRequest } from "@/lib/solana/hooks/useSocialProgram"
-import { useRealtimeFriendsWebSocket } from "@/hooks/useRealtimeFriendsWebSocket"
+import { useFriendsCache } from "@/hooks/useFriendsCache"
 
 /**
  * Friends Modal Component
@@ -27,8 +27,9 @@ export function FriendsModal({ isOpen, onClose }) {
   const { sendFriendRequest, isLoading: isSending } = useSendFriendRequest()
   const { acceptFriendRequest, isLoading: isAccepting } = useAcceptFriendRequest()
 
-  // 使用 WebSocket 实时好友数据
-  const { friends, pendingRequests, isLoading, refresh } = useRealtimeFriendsWebSocket()
+  // 使用共享缓存的好友数据
+  const { friends, isLoading, refresh } = useFriendsCache()
+  const pendingRequests = [] // TODO: 添加待处理请求支持
 
   const userAddress = publicKey?.toString()
 
@@ -229,8 +230,8 @@ export function FriendsModal({ isOpen, onClose }) {
                 No friends yet. Add some friends to get started!
               </p>
             ) : (
-              <ScrollArea className="max-h-60">
-                <div className="space-y-2">
+              <ScrollArea className="h-[400px]">
+                <div className="space-y-2 pr-4">
                   {friends.map((friend) => (
                     <div
                       key={friend.address}
