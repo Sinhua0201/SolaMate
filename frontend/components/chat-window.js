@@ -6,12 +6,24 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useSendMessage, useInitializeChatRoom } from '@/lib/solana/hooks/useChatProgram';
 import { useRecordExpense, ExpenseCategory } from '@/lib/solana/hooks/useExpenseProgram';
+import { useRealtimeChatWebSocket } from '@/hooks/useRealtimeChatWebSocket';
 
 export default function ChatWindow({ selectedChat }) {
   const { publicKey, connected, sendTransaction: walletSendTransaction } = useWallet();
-  const [messages, setMessages] = useState([]);
+  const [aiMessages, setAiMessages] = useState([]); // AI 聊天消息
   const [inputMessage, setInputMessage] = useState('');
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+
+  // 使用 WebSocket 实时监听好友聊天（只在好友聊天时启用）
+  const {
+    messages: friendMessages,
+    isLoading: isFriendMessagesLoading,
+    refresh: refreshFriendMessages
+  } = useRealtimeChatWebSocket(selectedChat?.type === 'friend' ? selectedChat?.id : null);
+
+  // 根据聊天类型选择消息源
+  const messages = selectedChat?.type === 'ai' ? aiMessages : friendMessages;
+  const isLoading = selectedChat?.type === 'ai' ? isLoadingMessages : isFriendMessagesLoading;
   const [showMentions, setShowMentions] = useState(false);
   const [mentionSearch, setMentionSearch] = useState('');
   const [friends, setFriends] = useState([]);
@@ -99,93 +111,20 @@ export default function ChatWindow({ selectedChat }) {
   const loadMessages = async () => {
     if (!selectedChat || !publicKey) return;
 
-    setIsLoadingMessages(true);
-    try {
-      if (selectedChat.type === 'ai') {
-        // AI 聊天从本地存储加载
-        const aiMessages = JSON.parse(localStorage.getItem('ai_messages') || '[]');
-        setMessages(aiMessages);
-      } else {
-        // 好友聊天从区块链加载
-        const { getProgram } = await import('@/lib/solana/anchorSetup');
-        const { getChatRoomPDA, getMessagePDA } = await import('@/lib/solana/pdaHelpers');
-        const { PublicKey } = await import('@solana/web3.js');
-
-        const program = getProgram({ publicKey });
-        const friendPubkey = new PublicKey(selectedChat.id);
-        const [chatRoomPDA] = getChatRoomPDA(publicKey, friendPubkey);
-
-        // 检查聊天室是否存在
-        const chatRoom = await program.account.chatRoom.fetchNullable(chatRoomPDA);
-        if (!chatRoom) {
-          setMessages([]);
-          return;
-        }
-
-        // 获取所有消息
-        const allMessages = await program.account.message.all([
-          {
-            memcmp: {
-              offset: 8,
-              bytes: chatRoomPDA.toBase58(),
-            },
-          },
-        ]);
-
-        const formattedMessages = allMessages
-          .map(m => {
-            const content = m.account.content;
-            const sender = m.account.sender.toString();
-            const isMine = sender === publicKey.toString();
-
-            // 检查是否是 Payment Request
-            if (content.startsWith('PAYMENT_REQUEST:')) {
-              const [, amount, requester] = content.split(':');
-              return {
-                id: m.publicKey.toString(),
-                content: `💰 Payment Request\n\nRequesting ${amount} SOL`,
-                sender,
-                timestamp: new Date(m.account.timestamp.toNumber() * 1000).toISOString(),
-                isMine,
-                isPaymentRequest: !isMine, // 只有接收者看到按钮
-                paymentRequestData: {
-                  amount,
-                  requester,
-                },
-              };
-            }
-
-            // 检查是否是转账成功通知
-            if (content.startsWith('TRANSFER_SUCCESS:')) {
-              const [, amount, signature, senderAddr] = content.split(':');
-              return {
-                id: m.publicKey.toString(),
-                content: `✅ Transfer successful!\n\n${amount} SOL received from @${selectedChat.username}\n\nTransaction: ${signature.slice(0, 8)}...${signature.slice(-8)}`,
-                sender,
-                timestamp: new Date(m.account.timestamp.toNumber() * 1000).toISOString(),
-                isMine,
-                explorerLink: `https://explorer.solana.com/tx/${signature}?cluster=devnet`,
-              };
-            }
-
-            return {
-              id: m.publicKey.toString(),
-              content,
-              sender,
-              timestamp: new Date(m.account.timestamp.toNumber() * 1000).toISOString(),
-              isMine,
-            };
-          })
-          .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-
-        setMessages(formattedMessages);
+    // 只处理 AI 聊天，好友聊天由 WebSocket hook 处理
+    if (selectedChat.type === 'ai') {
+      setIsLoadingMessages(true);
+      try {
+        const aiMsgs = JSON.parse(localStorage.getItem('ai_messages') || '[]');
+        setAiMessages(aiMsgs);
+      } catch (err) {
+        console.error('Error loading AI messages:', err);
+        setAiMessages([]);
+      } finally {
+        setIsLoadingMessages(false);
       }
-    } catch (err) {
-      console.error('Error loading messages:', err);
-      setMessages([]);
-    } finally {
-      setIsLoadingMessages(false);
     }
+    // 好友聊天消息由 useRealtimeChatWebSocket hook 自动处理
   };
 
   // 解析转账指令 - 支持智能分类检测
@@ -248,7 +187,7 @@ export default function ChatWindow({ selectedChat }) {
 
     const currentMessages = JSON.parse(localStorage.getItem('ai_messages') || '[]');
     const updatedMessages = [...currentMessages, confirmMsg];
-    setMessages(updatedMessages);
+    setAiMessages(updatedMessages);
     localStorage.setItem('ai_messages', JSON.stringify(updatedMessages));
   };
 
@@ -265,9 +204,9 @@ export default function ChatWindow({ selectedChat }) {
 
     if (selectedChat.type === 'ai') {
       // AI 聊天
-      const aiMessages = [...messages, newMessage];
-      setMessages(aiMessages);
-      localStorage.setItem('ai_messages', JSON.stringify(aiMessages));
+      const aiMsgs = [...aiMessages, newMessage];
+      setAiMessages(aiMsgs);
+      localStorage.setItem('ai_messages', JSON.stringify(aiMsgs));
       const userInput = inputMessage;
       setInputMessage('');
 
@@ -292,8 +231,8 @@ export default function ChatWindow({ selectedChat }) {
               isConfirmation: true,
               transferData: { amount: parsed.amount, friend, reason: parsed.reason, category: parsed.category },
             };
-            const updatedMessages = [...aiMessages, confirmMsg];
-            setMessages(updatedMessages);
+            const updatedMessages = [...aiMsgs, confirmMsg];
+            setAiMessages(updatedMessages);
             localStorage.setItem('ai_messages', JSON.stringify(updatedMessages));
           } else {
             // 没有分类，显示分类选择消息
@@ -306,8 +245,8 @@ export default function ChatWindow({ selectedChat }) {
               showCategorySelection: true,
               transferData: { amount: parsed.amount, friend, reason: parsed.reason },
             };
-            const updatedMessages = [...aiMessages, categoryMsg];
-            setMessages(updatedMessages);
+            const updatedMessages = [...aiMsgs, categoryMsg];
+            setAiMessages(updatedMessages);
             localStorage.setItem('ai_messages', JSON.stringify(updatedMessages));
           }
         } else {
@@ -320,8 +259,8 @@ export default function ChatWindow({ selectedChat }) {
               timestamp: new Date().toISOString(),
               isMine: false,
             };
-            const updatedMessages = [...aiMessages, aiReply];
-            setMessages(updatedMessages);
+            const updatedMessages = [...aiMsgs, aiReply];
+            setAiMessages(updatedMessages);
             localStorage.setItem('ai_messages', JSON.stringify(updatedMessages));
           }, 500);
         }
@@ -363,8 +302,8 @@ export default function ChatWindow({ selectedChat }) {
             timestamp: new Date().toISOString(),
             isMine: false,
           };
-          const updatedMessages = [...aiMessages, aiReply];
-          setMessages(updatedMessages);
+          const updatedMessages = [...aiMsgs, aiReply];
+          setAiMessages(updatedMessages);
           localStorage.setItem('ai_messages', JSON.stringify(updatedMessages));
         }, 800);
       }
@@ -374,8 +313,9 @@ export default function ChatWindow({ selectedChat }) {
         const result = await sendMessage(selectedChat.id, inputMessage);
 
         if (result.success) {
-          setMessages([...messages, newMessage]);
           setInputMessage('');
+          // WebSocket 会自动更新消息，但手动刷新确保立即显示
+          refreshFriendMessages();
         } else {
           alert('Failed to send message: ' + result.error);
         }
@@ -514,15 +454,9 @@ export default function ChatWindow({ selectedChat }) {
       await executeTransferDirect(amount, friend);
     } else {
       // 拒绝请求
-      const rejectMsg = {
-        id: Date.now(),
-        content: `❌ Payment request rejected`,
-        sender: publicKey.toString(),
-        timestamp: new Date().toISOString(),
-        isMine: true,
-      };
-      setMessages(prev => [...prev, rejectMsg]);
       sendMessage(selectedChat.id, `Payment request for ${amount} SOL was rejected`);
+      // WebSocket 会自动更新消息
+      refreshFriendMessages();
     }
   };
 
@@ -530,15 +464,8 @@ export default function ChatWindow({ selectedChat }) {
     try {
       const { Connection, PublicKey, SystemProgram, Transaction, LAMPORTS_PER_SOL } = await import('@solana/web3.js');
 
-      // 显示处理中消息
-      const processingMsg = {
-        id: Date.now(),
-        content: `⏳ Processing transfer of ${amount} SOL to @${friend.username}...\n\nPlease approve the transaction in your wallet.`,
-        sender: publicKey.toString(),
-        timestamp: new Date().toISOString(),
-        isMine: true,
-      };
-      setMessages(prev => [...prev, processingMsg]);
+      // 显示处理中提示
+      console.log(`⏳ Processing transfer of ${amount} SOL to @${friend.username}...`);
 
       // 创建转账交易
       const connection = new Connection('https://api.devnet.solana.com', 'confirmed');
@@ -559,20 +486,11 @@ export default function ChatWindow({ selectedChat }) {
       // 等待确认
       await connection.confirmTransaction(signature, 'confirmed');
 
-      // 显示成功消息（发送者看到）
-      const successMsg = {
-        id: Date.now() + 1,
-        content: `✅ Transfer successful!\n\n${amount} SOL sent to @${friend.username}\n\nTransaction: ${signature.slice(0, 8)}...${signature.slice(-8)}`,
-        sender: publicKey.toString(),
-        timestamp: new Date().toISOString(),
-        isMine: true,
-        explorerLink: `https://explorer.solana.com/tx/${signature}?cluster=devnet`,
-      };
-
-      setMessages(prev => [...prev.filter(m => m.id !== processingMsg.id), successMsg]);
-
-      // 发送成功通知给对方（使用 selectedChat.id 而不是 friend.address）
+      // 发送成功通知给对方
       await sendMessage(selectedChat.id, `TRANSFER_SUCCESS:${amount}:${signature}:${publicKey.toString()}`);
+
+      // WebSocket 会自动更新消息
+      refreshFriendMessages();
 
       // 记录消费到区块链（使用选择的分类）
       try {
@@ -613,7 +531,8 @@ export default function ChatWindow({ selectedChat }) {
         isMine: true,
       };
 
-      setMessages(prev => [...prev, errorMsg]);
+      // WebSocket 会自动更新消息
+      refreshFriendMessages();
     }
   };
 
@@ -650,15 +569,8 @@ export default function ChatWindow({ selectedChat }) {
       // 发送到区块链
       sendMessage(selectedChat.id, requestContent);
 
-      // 在本地显示
-      const requestMsg = {
-        id: Date.now(),
-        content: `💰 Payment Request\n\nRequesting ${paymentAmount} SOL from @${friend.username}`,
-        sender: publicKey.toString(),
-        timestamp: new Date().toISOString(),
-        isMine: true,
-      };
-      setMessages(prev => [...prev, requestMsg]);
+      // WebSocket 会自动更新消息
+      refreshFriendMessages();
     }
 
     setShowPaymentModal(false);
@@ -678,7 +590,7 @@ export default function ChatWindow({ selectedChat }) {
         timestamp: new Date().toISOString(),
         isMine: false,
       };
-      setMessages(prev => {
+      setAiMessages(prev => {
         const updated = [...prev, processingMsg];
         localStorage.setItem('ai_messages', JSON.stringify(updated));
         return updated;
@@ -712,7 +624,7 @@ export default function ChatWindow({ selectedChat }) {
         isMine: false,
       };
 
-      setMessages(prev => {
+      setAiMessages(prev => {
         const updated = [...prev.filter(m => m.id !== processingMsg.id), successMsg];
         localStorage.setItem('ai_messages', JSON.stringify(updated));
         return updated;
@@ -756,7 +668,7 @@ export default function ChatWindow({ selectedChat }) {
         isMine: false,
       };
 
-      setMessages(prev => {
+      setAiMessages(prev => {
         const updated = [...prev, errorMsg];
         localStorage.setItem('ai_messages', JSON.stringify(updated));
         return updated;
@@ -908,7 +820,7 @@ export default function ChatWindow({ selectedChat }) {
                       timestamp: new Date().toISOString(),
                       isMine: false,
                     };
-                    setMessages(prev => {
+                    setAiMessages(prev => {
                       const updated = [...prev, cancelMsg];
                       localStorage.setItem('ai_messages', JSON.stringify(updated));
                       return updated;

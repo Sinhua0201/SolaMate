@@ -47,21 +47,21 @@ export function Navbar() {
   const [isEditMode, setIsEditMode] = useState(false)
   const [copiedAddress, setCopiedAddress] = useState(false)
   const [balance, setBalance] = useState(0)
-  
+
   // Edit profile state
   const [editUsername, setEditUsername] = useState("")
   const [editAvatar, setEditAvatar] = useState(null)
   const [editAvatarPreview, setEditAvatarPreview] = useState(null)
   const [isUpdating, setIsUpdating] = useState(false)
   const [updateError, setUpdateError] = useState("")
-  
+
   // Solana wallet hooks
   const { publicKey, connected } = useWallet()
   const { connection } = useConnection()
-  
+
   // Profile hook
   const { profile, updateProfile } = useProfile()
-  
+
   // Reset edit mode when modal closes
   useEffect(() => {
     if (!isProfileOpen) {
@@ -69,25 +69,33 @@ export function Navbar() {
       setUpdateError("")
     }
   }, [isProfileOpen])
-  
-  // Fetch SOL balance
+
+  // Fetch SOL balance (with debounce to avoid rate limiting)
   useEffect(() => {
     if (publicKey && connected) {
-      connection.getBalance(publicKey).then((bal) => {
-        setBalance(bal / LAMPORTS_PER_SOL)
-      }).catch(console.error)
+      // 延迟加载余额，避免立即请求
+      const timer = setTimeout(() => {
+        connection.getBalance(publicKey).then((bal) => {
+          setBalance(bal / LAMPORTS_PER_SOL)
+        }).catch((err) => {
+          console.error('Error fetching balance:', err)
+          // 如果失败，不显示错误，只是不更新余额
+        })
+      }, 500) // 延迟 500ms
+
+      return () => clearTimeout(timer)
     } else {
       setBalance(0)
     }
-  }, [publicKey, connected, connection])
-  
+  }, [publicKey, connected])
+
   // Format address for display
   const formatAddress = (address) => {
     if (!address) return "Not connected"
     const str = address.toString()
     return `${str.slice(0, 6)}...${str.slice(-4)}`
   }
-  
+
   const userData = {
     address: formatAddress(publicKey),
     fullAddress: publicKey?.toString() || "",
@@ -95,12 +103,12 @@ export function Navbar() {
       SOL: balance.toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 }),
     }
   }
-  
+
   // Set pathname on client side only
   useEffect(() => {
     setPathname(router.pathname)
   }, [router.pathname])
-  
+
   // Copy wallet address to clipboard
   const copyAddress = () => {
     if (userData.fullAddress) {
@@ -109,7 +117,7 @@ export function Navbar() {
       setTimeout(() => setCopiedAddress(false), 2000)
     }
   }
-  
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-neutral-800/50 bg-black/90 backdrop-blur-md supports-[backdrop-filter]:bg-black/70">
       <div className="container flex h-14 md:h-16 max-w-screen-2xl items-center justify-between px-4 mx-auto">
@@ -124,7 +132,7 @@ export function Navbar() {
             </SheetTrigger>
             <SheetContent side="left" className="w-80 bg-neutral-950 border-neutral-800/50">
               <div className="flex items-center gap-1 mb-8">
-                <Image 
+                <Image
                   src="/favicon.ico"
                   alt="SolaMate Logo"
                   width={28}
@@ -141,11 +149,10 @@ export function Navbar() {
                   <Link
                     key={link.href}
                     href={link.href}
-                    className={`flex items-center gap-2 text-base font-medium transition-colors px-3 py-2 rounded-lg ${
-                      pathname === link.href 
-                        ? "text-neutral-100 bg-neutral-800/50" 
+                    className={`flex items-center gap-2 text-base font-medium transition-colors px-3 py-2 rounded-lg ${pathname === link.href
+                        ? "text-neutral-100 bg-neutral-800/50"
                         : "text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/30"
-                    }`}
+                      }`}
                   >
                     {link.name}
                   </Link>
@@ -156,7 +163,7 @@ export function Navbar() {
 
           {/* Logo */}
           <Link href="/" className="flex items-center gap-1 hover:opacity-80 transition-opacity">
-            <Image 
+            <Image
               src="/favicon.ico"
               alt="SolaMate Logo"
               width={32}
@@ -168,13 +175,13 @@ export function Navbar() {
             </span>
           </Link>
         </div>
-        
+
         {/* Mobile - Top Right Actions */}
         <div className="md:hidden flex items-center gap-2">
           {connected ? (
             <>
               <NotificationBell />
-              <Button 
+              <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setIsFriendsOpen(true)}
@@ -199,28 +206,27 @@ export function Navbar() {
             <SolanaConnectButton />
           )}
         </div>
-        
+
         {/* Desktop navigation */}
         <nav className="hidden md:flex items-center gap-8">
           {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${
-                pathname === link.href
+              className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${pathname === link.href
                   ? "text-neutral-100"
                   : "text-neutral-400 hover:text-neutral-200"
-              }`}
+                }`}
             >
               {link.name}
             </Link>
           ))}
-          
+
           <div className="flex items-center gap-3">
             {connected && (
               <>
                 <NotificationBell />
-                <Button 
+                <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setIsFriendsOpen(true)}
@@ -246,17 +252,17 @@ export function Navbar() {
           </div>
         </nav>
       </div>
-      
+
       {/* Friends Modal */}
       <FriendsModal isOpen={isFriendsOpen} onClose={() => setIsFriendsOpen(false)} />
-      
+
       {/* Old Balance Modal - Removed */}
-      <Dialog open={false} onOpenChange={() => {}}>
+      <Dialog open={false} onOpenChange={() => { }}>
         <DialogContent className="sm:max-w-md w-[92vw] mx-auto p-4 sm:p-6">
           <DialogHeader className="pb-2">
             <DialogTitle className="text-lg sm:text-xl">Account Balance</DialogTitle>
           </DialogHeader>
-          
+
           <div className="space-y-3 sm:space-y-4 py-2">
             {/* Wallet Information Section */}
             <div className="space-y-2 mb-6">
@@ -277,7 +283,7 @@ export function Navbar() {
                   </Button>
                 </div>
                 <p className="text-xs sm:text-sm font-medium text-neutral-100 font-mono break-all mb-2">{userData.fullAddress}</p>
-                <a 
+                <a
                   href={`https://explorer.solana.com/address/${userData.fullAddress}?cluster=devnet`}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -287,13 +293,13 @@ export function Navbar() {
                 </a>
               </div>
             </div>
-            
+
             {/* Token Balances Section */}
             <div className="space-y-3">
               <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-3">
                 Token Balances
               </h3>
-              
+
               {/* SOL Balance */}
               <div className="flex items-center justify-between p-4 sm:p-5 bg-neutral-800/80 rounded-xl border-2 border-neutral-700 shadow-lg hover:bg-neutral-800 transition-colors">
                 <div className="flex items-center gap-3 sm:gap-4">
@@ -311,7 +317,7 @@ export function Navbar() {
                 </div>
               </div>
             </div>
-            
+
             {/* Total Balance */}
             <div className="pt-2 sm:pt-3 border-t border-neutral-700">
               <div className="flex items-center justify-between p-3 sm:p-4 bg-neutral-800/80 rounded-lg">
@@ -324,28 +330,28 @@ export function Navbar() {
           </div>
         </DialogContent>
       </Dialog>
-      
+
       {/* Profile Modal */}
       <Dialog open={isProfileOpen} onOpenChange={setIsProfileOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>My Profile</DialogTitle>
           </DialogHeader>
-          
+
           <div className="space-y-4 py-4">
             {/* Avatar - View or Edit Mode */}
             {isEditMode ? (
               <div className="flex flex-col items-center gap-2">
-                <div 
+                <div
                   onClick={() => document.getElementById('avatar-upload')?.click()}
                   className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity overflow-hidden border-4 border-neutral-700 relative group"
                 >
                   {(editAvatarPreview || profile?.avatar) ? (
                     <>
-                      <img 
-                        src={editAvatarPreview || profile?.avatar} 
-                        alt="Avatar" 
-                        className="w-full h-full object-cover" 
+                      <img
+                        src={editAvatarPreview || profile?.avatar}
+                        alt="Avatar"
+                        className="w-full h-full object-cover"
                       />
                       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                         <Edit className="h-6 w-6 text-white" />
@@ -394,7 +400,7 @@ export function Navbar() {
                     <User className="h-12 w-12 text-white" />
                   )}
                 </div>
-                
+
                 {/* Username - View Mode */}
                 <div className="text-center">
                   <h3 className="text-xl font-bold text-white">
@@ -404,7 +410,7 @@ export function Navbar() {
                 </div>
               </div>
             )}
-            
+
             {/* Username Input - Edit Mode Only */}
             {isEditMode && (
               <div className="space-y-2">
@@ -420,7 +426,7 @@ export function Navbar() {
                 <p className="text-xs text-neutral-400">3-20 characters (letters, numbers, underscore)</p>
               </div>
             )}
-            
+
             {/* Wallet Address */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-neutral-400">Wallet Address</label>
@@ -444,7 +450,7 @@ export function Navbar() {
                 </Button>
               </div>
             </div>
-            
+
             {/* SOL Balance */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-neutral-400">Balance</label>
@@ -455,9 +461,9 @@ export function Navbar() {
                 </div>
               </div>
             </div>
-            
+
             {/* View on Explorer */}
-            <a 
+            <a
               href={`https://explorer.solana.com/address/${userData.fullAddress}?cluster=devnet`}
               target="_blank"
               rel="noopener noreferrer"
@@ -465,7 +471,7 @@ export function Navbar() {
             >
               View on Solana Explorer →
             </a>
-            
+
             {/* Error Message */}
             {updateError && (
               <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-3">
@@ -478,25 +484,25 @@ export function Navbar() {
               <Button
                 onClick={async () => {
                   setUpdateError("")
-                  
+
                   if (!editUsername.trim()) {
                     setUpdateError("Username is required")
                     return
                   }
-                  
+
                   if (!/^[a-zA-Z0-9_]{3,20}$/.test(editUsername)) {
                     setUpdateError("Username must be 3-20 characters (letters, numbers, underscore only)")
                     return
                   }
-                  
+
                   setIsUpdating(true)
-                  
+
                   try {
                     const result = await updateProfile({
                       username: editUsername,
                       avatar: editAvatar || profile?.avatar,
                     })
-                    
+
                     if (result.success) {
                       setUpdateError("")
                       setIsEditMode(false)

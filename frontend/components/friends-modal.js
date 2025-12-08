@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState } from "react"
 import { useRouter } from "next/router"
 import { useWallet } from '@solana/wallet-adapter-react'
 import { PublicKey } from '@solana/web3.js'
@@ -11,7 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Card } from "@/components/ui/card"
 import { UserPlus, Check, X, MessageCircle, User, Copy } from "lucide-react"
 import { useSendFriendRequest, useAcceptFriendRequest } from "@/lib/solana/hooks/useSocialProgram"
-import { getProgram } from "@/lib/solana/anchorSetup"
+import { useRealtimeFriendsWebSocket } from "@/hooks/useRealtimeFriendsWebSocket"
 
 /**
  * Friends Modal Component
@@ -21,14 +21,14 @@ export function FriendsModal({ isOpen, onClose }) {
   const router = useRouter()
   const { publicKey, connected, sendTransaction } = useWallet()
   const [friendAddress, setFriendAddress] = useState("")
-  const [friends, setFriends] = useState([])
-  const [pendingRequests, setPendingRequests] = useState([])
-  const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const [copiedAddress, setCopiedAddress] = useState(null)
 
   const { sendFriendRequest, isLoading: isSending } = useSendFriendRequest()
   const { acceptFriendRequest, isLoading: isAccepting } = useAcceptFriendRequest()
+
+  // 使用 WebSocket 实时好友数据
+  const { friends, pendingRequests, isLoading, refresh } = useRealtimeFriendsWebSocket()
 
   const userAddress = publicKey?.toString()
 
@@ -48,102 +48,13 @@ export function FriendsModal({ isOpen, onClose }) {
       username: friend.username,
       type: 'friend',
     }))
-    
+
     // 关闭弹窗并跳转到聊天页面
     onClose()
     router.push('/chat')
   }
 
-  // 加载好友列表
-  useEffect(() => {
-    if (isOpen && connected && publicKey) {
-      loadFriends()
-    }
-  }, [isOpen, connected, publicKey])
 
-  const loadFriends = async () => {
-    setIsLoading(true)
-    try {
-      const program = getProgram({ publicKey, sendTransaction })
-      
-      // 获取所有 Friendship accounts
-      const friendships = await program.account.friendship.all()
-      
-      const myFriends = []
-      const pending = []
-      
-      for (const friendship of friendships) {
-        const { userA, userB, status } = friendship.account
-        
-        // 检查是否与当前用户相关
-        const isUserA = userA.toString() === userAddress
-        const isUserB = userB.toString() === userAddress
-        
-        if (isUserA || isUserB) {
-          const friendAddr = isUserA ? userB.toString() : userA.toString()
-          
-          // 获取好友档案
-          const friendProfile = await fetchProfile(friendAddr)
-          
-          const friendData = {
-            address: friendAddr,
-            username: friendProfile?.username || 'Anonymous',
-            displayName: friendProfile?.displayName || 'Anonymous',
-            status: status.pending ? 'pending' : 'accepted',
-            isUserA,
-          }
-          
-          if (status.pending) {
-            // 使用 requester 字段判断谁是发送者
-            const requester = friendship.account.requester
-            const isSender = requester.toString() === userAddress
-            
-            // 只显示别人发给我的待处理请求（我不是发送者）
-            if (!isSender) {
-              pending.push(friendData)
-            }
-          } else {
-            myFriends.push(friendData)
-          }
-        }
-      }
-      
-      setFriends(myFriends)
-      setPendingRequests(pending)
-    } catch (err) {
-      console.error('Error loading friends:', err)
-      setError('Failed to load friends')
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  // 简单的内存缓存
-  const profileCache = useRef({})
-  
-  // 获取用户档案（带缓存）
-  const fetchProfile = async (walletAddress) => {
-    // 检查缓存
-    if (profileCache.current[walletAddress]) {
-      return profileCache.current[walletAddress]
-    }
-    
-    try {
-      const response = await fetch(`/api/profile?walletAddress=${walletAddress}`)
-      const data = await response.json()
-      const profile = data.success && data.exists ? data.profile : null
-      
-      // 存入缓存
-      if (profile) {
-        profileCache.current[walletAddress] = profile
-      }
-      
-      return profile
-    } catch (err) {
-      console.error('Error fetching profile:', err)
-      return null
-    }
-  }
 
   // 发送好友请求
   const handleSendRequest = async () => {
@@ -156,7 +67,7 @@ export function FriendsModal({ isOpen, onClose }) {
 
     try {
       const friendPubkey = new PublicKey(friendAddress)
-      
+
       // 检查是否是自己
       if (friendPubkey.toString() === userAddress) {
         setError("You can't add yourself as a friend")
@@ -164,10 +75,10 @@ export function FriendsModal({ isOpen, onClose }) {
       }
 
       const result = await sendFriendRequest(friendPubkey)
-      
+
       if (result.success) {
         setFriendAddress("")
-        loadFriends()
+        refresh() // WebSocket 会自动更新，但手动刷新确保立即显示
         alert('Friend request sent!')
       } else {
         setError(result.error || 'Failed to send friend request')
@@ -182,9 +93,9 @@ export function FriendsModal({ isOpen, onClose }) {
     try {
       const friendPubkey = new PublicKey(friendAddr)
       const result = await acceptFriendRequest(friendPubkey)
-      
+
       if (result.success) {
-        loadFriends()
+        refresh() // WebSocket 会自动更新，但手动刷新确保立即显示
         alert('Friend request accepted!')
       } else {
         // 显示更友好的错误信息
@@ -310,7 +221,7 @@ export function FriendsModal({ isOpen, onClose }) {
             <h3 className="text-sm font-semibold text-white mb-3">
               My Friends ({friends.length})
             </h3>
-            
+
             {isLoading ? (
               <p className="text-center text-neutral-400 py-8">Loading...</p>
             ) : friends.length === 0 ? (

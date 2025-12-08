@@ -1,89 +1,16 @@
-import { useState, useEffect, useRef } from 'react';
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useState } from 'react';
 import { Search, Bot, User, MessageCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { getProgram } from '@/lib/solana/anchorSetup';
+import { useFriendsCache } from '@/hooks/useFriendsCache';
 
 export default function ChatSidebar({ selectedChat, onSelectChat }) {
-  const { publicKey, connected } = useWallet();
-  const [friends, setFriends] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    if (connected && publicKey) {
-      loadFriends();
-    }
-  }, [connected, publicKey]);
+  // 使用共享的好友缓存
+  const { friends, isLoading } = useFriendsCache();
 
-  const loadFriends = async () => {
-    setIsLoading(true);
-    try {
-      const program = getProgram({ publicKey });
-      
-      // 获取所有已接受的好友关系
-      const friendships = await program.account.friendship.all();
-      
-      const acceptedFriends = [];
-      
-      for (const friendship of friendships) {
-        const { userA, userB, status } = friendship.account;
-        
-        // 只显示已接受的好友
-        if (status.accepted) {
-          const isUserA = userA.toString() === publicKey.toString();
-          const isUserB = userB.toString() === publicKey.toString();
-          
-          if (isUserA || isUserB) {
-            const friendAddr = isUserA ? userB.toString() : userA.toString();
-            
-            // 获取好友信息
-            const friendProfile = await fetchProfile(friendAddr);
-            
-            acceptedFriends.push({
-              address: friendAddr,
-              username: friendProfile?.username || 'Anonymous',
-              displayName: friendProfile?.displayName || 'Anonymous',
-              lastMessage: null,
-              unread: 0,
-            });
-          }
-        }
-      }
-      
-      setFriends(acceptedFriends);
-    } catch (err) {
-      console.error('Error loading friends:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
-  // 简单的内存缓存
-  const profileCache = useRef({});
-  
-  const fetchProfile = async (walletAddress) => {
-    // 检查缓存
-    if (profileCache.current[walletAddress]) {
-      return profileCache.current[walletAddress];
-    }
-    
-    try {
-      const response = await fetch(`/api/profile?walletAddress=${walletAddress}`);
-      const data = await response.json();
-      const profile = data.success && data.exists ? data.profile : null;
-      
-      // 存入缓存
-      if (profile) {
-        profileCache.current[walletAddress] = profile;
-      }
-      
-      return profile;
-    } catch (err) {
-      return null;
-    }
-  };
 
   const filteredFriends = friends.filter(friend =>
     friend.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -103,7 +30,7 @@ export default function ChatSidebar({ selectedChat, onSelectChat }) {
       {/* Header */}
       <div className="p-4 border-b border-neutral-800">
         <h2 className="text-xl font-bold text-white mb-3">Chats</h2>
-        
+
         {/* Search */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-neutral-400" />
@@ -161,7 +88,7 @@ export default function ChatSidebar({ selectedChat, onSelectChat }) {
           )}
         </div>
       </ScrollArea>
-    </div>
+    </div >
   );
 }
 
@@ -171,8 +98,8 @@ function ChatItem({ chat, isSelected, onClick }) {
       onClick={onClick}
       className={`
         flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors mb-1
-        ${isSelected 
-          ? 'bg-blue-600 text-white' 
+        ${isSelected
+          ? 'bg-blue-600 text-white'
           : 'hover:bg-neutral-800 text-neutral-300'
         }
       `}
@@ -180,8 +107,8 @@ function ChatItem({ chat, isSelected, onClick }) {
       {/* Avatar */}
       <div className={`
         w-12 h-12 rounded-full flex items-center justify-center
-        ${chat.type === 'ai' 
-          ? 'bg-gradient-to-br from-purple-500 to-cyan-500' 
+        ${chat.type === 'ai'
+          ? 'bg-gradient-to-br from-purple-500 to-cyan-500'
           : 'bg-gradient-to-br from-blue-500 to-green-500'
         }
       `}>
