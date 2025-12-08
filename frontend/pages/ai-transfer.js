@@ -84,7 +84,7 @@ export default function AITransferPage() {
                         <Sparkles className="h-12 w-12 text-purple-400 mx-auto mb-3" />
                         <h3 className="text-lg font-bold text-white mb-2">Voice Transfer</h3>
                         <p className="text-sm text-neutral-300">
-                            Just say "Send 2 SOL to Alice" and we'll handle the rest
+                            Just say &quot;Send 2 SOL to Alice&quot; and we&apos;ll handle the rest
                         </p>
                     </Card>
 
@@ -177,13 +177,13 @@ export default function AITransferPage() {
                                         <p className="text-sm text-neutral-400 mb-3">Try saying:</p>
                                         <div className="space-y-2">
                                             <div className="bg-neutral-800/50 rounded-lg p-2 text-sm text-neutral-300">
-                                                "Send 2 SOL to Alice for coffee"
+                                                &quot;Send 2 SOL to Alice for coffee&quot;
                                             </div>
                                             <div className="bg-neutral-800/50 rounded-lg p-2 text-sm text-neutral-300">
-                                                "Transfer 0.5 SOL to Bob"
+                                                &quot;Transfer 0.5 SOL to Bob&quot;
                                             </div>
                                             <div className="bg-neutral-800/50 rounded-lg p-2 text-sm text-neutral-300">
-                                                "Pay Charlie 1 SOL for lunch"
+                                                &quot;Pay Charlie 1 SOL for lunch&quot;
                                             </div>
                                         </div>
                                     </div>
@@ -205,7 +205,7 @@ export default function AITransferPage() {
                                             <span className="text-white font-semibold">Most Active</span>
                                         </div>
                                         <p className="text-neutral-300">
-                                            You've transacted with <span className="text-purple-400 font-bold">Alice</span> the most this month
+                                            You&apos;ve transacted with <span className="text-purple-400 font-bold">Alice</span> the most this month
                                         </p>
                                     </div>
 
@@ -225,7 +225,7 @@ export default function AITransferPage() {
                                             <span className="text-white font-semibold">Total Volume</span>
                                         </div>
                                         <p className="text-neutral-300">
-                                            You've transferred <span className="text-green-400 font-bold">7.5 SOL</span> in total
+                                            You&apos;ve transferred <span className="text-green-400 font-bold">7.5 SOL</span> in total
                                         </p>
                                     </div>
                                 </div>
@@ -235,12 +235,12 @@ export default function AITransferPage() {
                                     <div className="space-y-2">
                                         <div className="bg-neutral-800/50 rounded-lg p-3">
                                             <p className="text-sm text-neutral-300">
-                                                💡 <span className="text-white">Bob</span> also transacts with Alice. Want to add him?
+                                                💡 <span className="text-white">Bob</span> also transacts with Alice. Want to add them?
                                             </p>
                                         </div>
                                         <div className="bg-neutral-800/50 rounded-lg p-3">
                                             <p className="text-sm text-neutral-300">
-                                                💡 You usually send to <span className="text-white">Alice</span> on Fridays. Set a reminder?
+                                                💡 You usually send to <span className="text-white">Alice</span> on Fridays. Set a reminder for next time?
                                             </p>
                                         </div>
                                     </div>
@@ -260,7 +260,7 @@ export default function AITransferPage() {
                         🚀 Built for <span className="text-purple-400 font-bold">Solana Student Hackathon 2025</span>
                     </p>
                     <p className="text-sm text-neutral-400 mt-2">
-                        Powered by Solana's high-performance blockchain + AI natural language processing
+                        Powered by Solana&apos;s high-performance blockchain + AI natural language processing
                     </p>
                 </Card>
             </div>

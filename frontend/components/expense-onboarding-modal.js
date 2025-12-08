@@ -103,7 +103,7 @@ export function ExpenseOnboardingModal() {
                 <div className="space-y-4 mt-4">
                     {/* Features */}
                     <Card className="bg-neutral-800/50 border-neutral-700 p-4">
-                        <h3 className="text-white font-semibold mb-3">What you'll get:</h3>
+                        <h3 className="text-white font-semibold mb-3">What you will get:</h3>
                         <ul className="space-y-2 text-sm text-neutral-300">
                             <li className="flex items-start gap-2">
                                 <Check className="h-5 w-5 text-green-400 flex-shrink-0 mt-0.5" />
@@ -128,7 +128,7 @@ export function ExpenseOnboardingModal() {
                     <div className="bg-yellow-900/20 border border-yellow-500/30 rounded-lg p-3">
                         <p className="text-xs text-yellow-200">
                             ⚠️ This requires a one-time transaction to create your expense tracking account on the blockchain.
-                            You'll need to approve it in your wallet.
+                            You will need to approve it in your wallet.
                         </p>
                     </div>
 
@@ -164,7 +164,7 @@ export function ExpenseOnboardingModal() {
                     </div>
 
                     <p className="text-xs text-neutral-500 text-center">
-                        You can enable this later from the Expenses page
+                        You can enable this later from the Expenses page.
                     </p>
                 </div>
             </DialogContent>

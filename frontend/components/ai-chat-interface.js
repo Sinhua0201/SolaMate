@@ -210,7 +210,7 @@ export function AIChatInterface({ onTransferRequest }) {
             setTimeout(() => {
                 const assistantMessage = {
                     role: 'assistant',
-                    content: 'I didn\'t quite understand that. Please try saying something like:\n• "Send 2 SOL to @Alice"\n• "Transfer 0.5 SOL to @Bob for dinner"\n\nMake sure to use @ before the username!',
+                    content: 'I did not quite understand that. Please try saying something like:\n• Send 2 SOL to @Alice\n• Transfer 0.5 SOL to @Bob for dinner\n\nMake sure to use @ before the username!',
                     timestamp: Date.now(),
                 };
 
@@ -564,7 +564,7 @@ export function AIChatInterface({ onTransferRequest }) {
                         </div>
 
                         <div className="text-xs text-neutral-500 text-center">
-                            💡 Try: "send 0.1 SOL to @username for coffee" or use voice input
+                            💡 Try: &quot;send 0.1 SOL to @username for coffee&quot; or use voice input
                         </div>
                     </div>
                 )}
