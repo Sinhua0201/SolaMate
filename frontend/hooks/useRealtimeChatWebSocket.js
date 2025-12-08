@@ -20,6 +20,8 @@ export function useRealtimeChatWebSocket(friendAddress) {
         if (!publicKey || !connected || !friendAddress) return;
 
         setIsLoading(true);
+        const startTime = Date.now();
+
         try {
             const program = getProgram({ publicKey });
             const friendPubkey = new PublicKey(friendAddress);
@@ -87,7 +89,14 @@ export function useRealtimeChatWebSocket(friendAddress) {
             console.error('Error loading messages:', err);
             setMessages([]);
         } finally {
-            setIsLoading(false);
+            // 确保 loading 至少显示 300ms，让用户看到
+            const elapsed = Date.now() - startTime;
+            const minLoadingTime = 300;
+            if (elapsed < minLoadingTime) {
+                setTimeout(() => setIsLoading(false), minLoadingTime - elapsed);
+            } else {
+                setIsLoading(false);
+            }
         }
     }, [publicKey, connected, friendAddress]);
 

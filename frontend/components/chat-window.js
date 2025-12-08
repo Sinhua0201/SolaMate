@@ -116,6 +116,8 @@ export default function ChatWindow({ selectedChat }) {
     // 只处理 AI 聊天，好友聊天由 WebSocket hook 处理
     if (selectedChat.type === 'ai') {
       setIsLoadingMessages(true);
+      const startTime = Date.now();
+
       try {
         const aiMsgs = JSON.parse(localStorage.getItem('ai_messages') || '[]');
         setAiMessages(aiMsgs);
@@ -123,7 +125,14 @@ export default function ChatWindow({ selectedChat }) {
         console.error('Error loading AI messages:', err);
         setAiMessages([]);
       } finally {
-        setIsLoadingMessages(false);
+        // 确保 loading 至少显示 300ms
+        const elapsed = Date.now() - startTime;
+        const minLoadingTime = 300;
+        if (elapsed < minLoadingTime) {
+          setTimeout(() => setIsLoadingMessages(false), minLoadingTime - elapsed);
+        } else {
+          setIsLoadingMessages(false);
+        }
       }
     }
     // 好友聊天消息由 useRealtimeChatWebSocket hook 自动处理
@@ -818,9 +827,12 @@ export default function ChatWindow({ selectedChat }) {
             </div>
           )}
 
-          {isLoadingMessages ? (
+          {isLoading ? (
             <div className="flex items-center justify-center h-full">
-              <Loader2 className="h-8 w-8 animate-spin text-neutral-400" />
+              <div className="text-center">
+                <Loader2 className="h-12 w-12 animate-spin text-purple-400 mx-auto mb-4" />
+                <p className="text-neutral-400 text-sm">Loading messages...</p>
+              </div>
             </div>
           ) : messages.length === 0 ? (
             <div className="flex items-center justify-center h-full text-neutral-400">
