@@ -37,10 +37,10 @@ export default async function handler(req, res) {
     
     if (!querySnapshot.empty) {
       const profileData = querySnapshot.docs[0].data();
-      
+      // Return avatar filename (e.g., "1.png"), frontend will use /avatar/{name} to display
       return res.status(200).json({ 
         success: true, 
-        avatar: profileData.avatar || null
+        avatar: profileData.avatar || null // Just the filename like "1.png"
       });
     } else {
       return res.status(404).json({ 

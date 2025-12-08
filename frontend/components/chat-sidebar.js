@@ -4,6 +4,9 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useFriendsCache } from '@/hooks/useFriendsCache';
 
+// Helper to get avatar path from filename
+const getAvatarPath = (name) => name ? `/avatar/${name}` : null;
+
 export default function ChatSidebar({ selectedChat, onSelectChat }) {
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -72,7 +75,7 @@ export default function ChatSidebar({ selectedChat, onSelectChat }) {
                   id: friend.address,
                   name: friend.displayName,
                   type: 'friend',
-                  avatar: <User className="h-6 w-6" />,
+                  avatarSrc: friend.avatar ? getAvatarPath(friend.avatar) : null,
                   lastMessage: friend.lastMessage,
                   unread: friend.unread,
                 }}
@@ -81,6 +84,7 @@ export default function ChatSidebar({ selectedChat, onSelectChat }) {
                   id: friend.address,
                   name: friend.displayName,
                   username: friend.username,
+                  avatar: friend.avatar,
                   type: 'friend',
                 })}
               />
@@ -106,13 +110,19 @@ function ChatItem({ chat, isSelected, onClick }) {
     >
       {/* Avatar */}
       <div className={`
-        w-12 h-12 rounded-full flex items-center justify-center
+        w-12 h-12 rounded-full flex items-center justify-center overflow-hidden
         ${chat.type === 'ai'
           ? 'bg-gradient-to-br from-purple-500 to-cyan-500'
           : 'bg-gradient-to-br from-blue-500 to-green-500'
         }
       `}>
-        {chat.avatar}
+        {chat.type === 'ai' ? (
+          <Bot className="h-6 w-6 text-white" />
+        ) : chat.avatarSrc ? (
+          <img src={chat.avatarSrc} alt={chat.name} className="w-full h-full object-cover" />
+        ) : (
+          <User className="h-6 w-6 text-white" />
+        )}
       </div>
 
       {/* Info */}

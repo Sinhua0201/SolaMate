@@ -13,6 +13,9 @@ import { UserPlus, Check, X, MessageCircle, User, Copy } from "lucide-react"
 import { useSendFriendRequest, useAcceptFriendRequest } from "@/lib/solana/hooks/useSocialProgram"
 import { useFriendsCache } from "@/hooks/useFriendsCache"
 
+// Helper to get avatar path from filename
+const getAvatarPath = (name) => name ? `/avatar/${name}` : null
+
 /**
  * Friends Modal Component
  * 好友管理弹窗 - 添加好友、查看好友列表、接受请求
@@ -46,6 +49,7 @@ export function FriendsModal({ isOpen, onClose }) {
       id: friend.address,
       name: friend.displayName,
       username: friend.username,
+      avatar: friend.avatar,
       type: 'friend',
     }))
 
@@ -188,8 +192,12 @@ export function FriendsModal({ isOpen, onClose }) {
                       className="flex items-center justify-between p-3 bg-neutral-900/50 rounded-lg"
                     >
                       <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center flex-shrink-0">
-                          <User className="h-5 w-5 text-white" />
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                          {friend.avatar ? (
+                            <img src={getAvatarPath(friend.avatar)} alt={friend.displayName} className="w-full h-full object-cover" />
+                          ) : (
+                            <User className="h-5 w-5 text-white" />
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-white">
@@ -262,8 +270,12 @@ export function FriendsModal({ isOpen, onClose }) {
                       className="flex items-center justify-between p-3 bg-neutral-900/50 rounded-lg hover:bg-neutral-900 transition-colors"
                     >
                       <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center flex-shrink-0">
-                          <User className="h-5 w-5 text-white" />
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                          {friend.avatar ? (
+                            <img src={getAvatarPath(friend.avatar)} alt={friend.displayName} className="w-full h-full object-cover" />
+                          ) : (
+                            <User className="h-5 w-5 text-white" />
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-white">

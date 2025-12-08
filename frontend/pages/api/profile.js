@@ -44,15 +44,15 @@ export default async function handler(req, res) {
       if (!querySnapshot.empty) {
         const profileData = querySnapshot.docs[0].data();
         
-        // 不返回 avatar，太大了
+        // 返回 avatar（现在只是文件名如 "2.png"，很小）
         const profile = {
           id: querySnapshot.docs[0].id,
           walletAddress: profileData.walletAddress,
           username: profileData.username,
           displayName: profileData.displayName,
+          avatar: profileData.avatar || null,
           createdAt: profileData.createdAt,
           updatedAt: profileData.updatedAt,
-          // avatar 只在需要时单独获取
         };
         
         return res.status(200).json({ 
@@ -121,7 +121,7 @@ export default async function handler(req, res) {
         const docRef = doc(db, 'profiles', docId);
         await updateDoc(docRef, profileData);
         
-        // 返回时不包含 avatar
+        // 返回包含 avatar
         return res.status(200).json({ 
           success: true, 
           message: 'Profile updated',
@@ -130,6 +130,7 @@ export default async function handler(req, res) {
             walletAddress: profileData.walletAddress,
             username: profileData.username,
             displayName: profileData.displayName,
+            avatar: profileData.avatar,
             updatedAt: profileData.updatedAt
           }
         });
@@ -138,7 +139,7 @@ export default async function handler(req, res) {
         profileData.createdAt = Timestamp.now();
         const docRef = await addDoc(profilesRef, profileData);
         
-        // 返回时不包含 avatar
+        // 返回包含 avatar
         return res.status(200).json({ 
           success: true, 
           message: 'Profile created',
@@ -147,6 +148,7 @@ export default async function handler(req, res) {
             walletAddress: profileData.walletAddress,
             username: profileData.username,
             displayName: profileData.displayName,
+            avatar: profileData.avatar,
             createdAt: profileData.createdAt
           }
         });

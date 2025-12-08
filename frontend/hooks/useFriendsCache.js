@@ -81,6 +81,7 @@ export function useFriendsCache() {
                             address: friendAddr,
                             username: data.profile.username,
                             displayName: data.profile.displayName,
+                            avatar: data.profile.avatar || null, // 添加 avatar
                         };
                     }
                 } catch (err) {

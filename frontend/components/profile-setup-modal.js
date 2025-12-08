@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState } from "react"
 import { useWallet } from '@solana/wallet-adapter-react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,50 +11,38 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog"
-import { Avatar } from "@/components/ui/avatar"
-import { Upload, User } from "lucide-react"
+import { ChevronLeft, ChevronRight, Check } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
+
+// 10 preset avatars - store only the filename
+const AVATAR_NAMES = Array.from({ length: 10 }, (_, i) => `${i + 1}.png`)
+const getAvatarPath = (name) => name ? `/avatar/${name}` : null
 
 /**
  * Profile Setup Modal
  * Shows on first wallet connection to collect username and avatar
+ * Features a rotating avatar carousel for selection
  */
 export function ProfileSetupModal({ isOpen, onClose, onProfileCreated }) {
   const { publicKey } = useWallet()
   const [username, setUsername] = useState("")
-  const [avatar, setAvatar] = useState(null)
-  const [avatarPreview, setAvatarPreview] = useState(null)
+  const [selectedAvatarIndex, setSelectedAvatarIndex] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState("")
-  const fileInputRef = useRef(null)
+  const [direction, setDirection] = useState(0) // -1 for left, 1 for right
 
   const walletAddress = publicKey?.toString()
 
-  // Handle avatar upload
-  const handleAvatarChange = (e) => {
-    const file = e.target.files[0]
-    if (!file) return
+  // Navigate to previous avatar
+  const prevAvatar = () => {
+    setDirection(-1)
+    setSelectedAvatarIndex((prev) => (prev - 1 + AVATAR_NAMES.length) % AVATAR_NAMES.length)
+  }
 
-    // Check file size (max 2MB)
-    if (file.size > 2 * 1024 * 1024) {
-      setError("Image must be less than 2MB")
-      return
-    }
-
-    // Check file type
-    if (!file.type.startsWith('image/')) {
-      setError("Please upload an image file")
-      return
-    }
-
-    // Convert to base64
-    const reader = new FileReader()
-    reader.onloadend = () => {
-      const base64String = reader.result
-      setAvatar(base64String)
-      setAvatarPreview(base64String)
-      setError("")
-    }
-    reader.readAsDataURL(file)
+  // Navigate to next avatar
+  const nextAvatar = () => {
+    setDirection(1)
+    setSelectedAvatarIndex((prev) => (prev + 1) % AVATAR_NAMES.length)
   }
 
   // Handle form submission
@@ -82,7 +70,7 @@ export function ProfileSetupModal({ isOpen, onClose, onProfileCreated }) {
         body: JSON.stringify({
           walletAddress,
           username,
-          avatar,
+          avatar: AVATAR_NAMES[selectedAvatarIndex], // Save only filename like "1.png"
         }),
       })
 
@@ -102,6 +90,8 @@ export function ProfileSetupModal({ isOpen, onClose, onProfileCreated }) {
     }
   }
 
+
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
@@ -113,35 +103,118 @@ export function ProfileSetupModal({ isOpen, onClose, onProfileCreated }) {
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
-          {/* Avatar Upload */}
+          {/* Avatar Carousel with 3D Rotation Effect */}
           <div className="flex flex-col items-center gap-4">
-            <div 
-              onClick={() => fileInputRef.current?.click()}
-              className="w-24 h-24 rounded-full bg-neutral-800 border-2 border-neutral-700 flex items-center justify-center cursor-pointer hover:border-neutral-600 transition-colors overflow-hidden"
-            >
-              {avatarPreview ? (
-                <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
-              ) : (
-                <User className="h-12 w-12 text-neutral-500" />
-              )}
+            <p className="text-sm text-neutral-400">Choose your avatar</p>
+            
+            <div className="flex items-center gap-4">
+              {/* Left Arrow */}
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={prevAvatar}
+                className="h-10 w-10 rounded-full bg-neutral-800 hover:bg-neutral-700 hover:scale-110 transition-transform"
+              >
+                <ChevronLeft className="h-6 w-6" />
+              </Button>
+
+              {/* Avatar Display with 3D Rotation */}
+              <div className="relative w-32 h-32 flex items-center justify-center" style={{ perspective: "600px" }}>
+                <AnimatePresence initial={false} custom={direction} mode="wait">
+                  <motion.div
+                    key={selectedAvatarIndex}
+                    custom={direction}
+                    initial={{ 
+                      rotateY: direction > 0 ? 90 : -90, 
+                      opacity: 0, 
+                      scale: 0.5,
+                    }}
+                    animate={{ 
+                      rotateY: 0, 
+                      opacity: 1, 
+                      scale: 1,
+                    }}
+                    exit={{ 
+                      rotateY: direction < 0 ? 90 : -90, 
+                      opacity: 0, 
+                      scale: 0.5,
+                    }}
+                    transition={{
+                      type: "spring",
+                      stiffness: 200,
+                      damping: 20,
+                      duration: 0.5,
+                    }}
+                    className="absolute"
+                    style={{ transformStyle: "preserve-3d" }}
+                  >
+                    <motion.div 
+                      className="w-28 h-28 rounded-full border-4 border-purple-500 overflow-hidden bg-neutral-800 shadow-2xl"
+                      animate={{
+                        boxShadow: [
+                          "0 0 20px rgba(168, 85, 247, 0.4), 0 0 40px rgba(168, 85, 247, 0.2)",
+                          "0 0 30px rgba(6, 182, 212, 0.4), 0 0 60px rgba(6, 182, 212, 0.2)",
+                          "0 0 20px rgba(168, 85, 247, 0.4), 0 0 40px rgba(168, 85, 247, 0.2)",
+                        ],
+                        borderColor: ["#a855f7", "#06b6d4", "#a855f7"],
+                      }}
+                      transition={{
+                        duration: 2,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      }}
+                    >
+                      <img
+                        src={getAvatarPath(AVATAR_NAMES[selectedAvatarIndex])}
+                        alt={`Avatar ${selectedAvatarIndex + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </motion.div>
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+
+              {/* Right Arrow */}
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={nextAvatar}
+                className="h-10 w-10 rounded-full bg-neutral-800 hover:bg-neutral-700 hover:scale-110 transition-transform"
+              >
+                <ChevronRight className="h-6 w-6" />
+              </Button>
             </div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleAvatarChange}
-              className="hidden"
-            />
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => fileInputRef.current?.click()}
-              className="bg-neutral-800 border-neutral-700"
-            >
-              <Upload className="h-4 w-4 mr-2" />
-              Upload Avatar
-            </Button>
+
+            {/* Avatar Indicator Dots */}
+            <div className="flex gap-2 mt-2">
+              {AVATAR_NAMES.map((_, index) => (
+                <motion.button
+                  key={index}
+                  type="button"
+                  onClick={() => {
+                    setDirection(index > selectedAvatarIndex ? 1 : -1)
+                    setSelectedAvatarIndex(index)
+                  }}
+                  className={`rounded-full transition-all ${
+                    index === selectedAvatarIndex
+                      ? "bg-gradient-to-r from-purple-500 to-cyan-500"
+                      : "bg-neutral-600 hover:bg-neutral-500"
+                  }`}
+                  animate={{
+                    width: index === selectedAvatarIndex ? 20 : 8,
+                    height: 8,
+                  }}
+                  whileHover={{ scale: 1.2 }}
+                  whileTap={{ scale: 0.9 }}
+                />
+              ))}
+            </div>
+
+            <p className="text-xs text-neutral-500">
+              Avatar {selectedAvatarIndex + 1} of {AVATAR_NAMES.length}
+            </p>
           </div>
 
           {/* Username Input */}
@@ -180,13 +253,14 @@ export function ProfileSetupModal({ isOpen, onClose, onProfileCreated }) {
             </div>
           )}
 
-          {/* Submit Button */}
+          {/* Confirm Button */}
           <Button
             type="submit"
             disabled={isSubmitting || !username.trim()}
             className="w-full bg-gradient-to-r from-purple-600 to-cyan-600"
           >
-            {isSubmitting ? "Creating Profile..." : "Create Profile"}
+            <Check className="h-4 w-4 mr-2" />
+            {isSubmitting ? "Creating Profile..." : "Confirm"}
           </Button>
         </form>
       </DialogContent>

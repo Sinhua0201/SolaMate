@@ -4,9 +4,10 @@ import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/router"
 import { useState, useEffect } from "react"
-import { Menu, Wallet, Copy, Check, User, Edit, Users } from "lucide-react"
+import { Menu, Wallet, Copy, Check, User, Edit, Users, ChevronLeft, ChevronRight } from "lucide-react"
 import { useWallet, useConnection } from '@solana/wallet-adapter-react'
 import { LAMPORTS_PER_SOL } from '@solana/web3.js'
+import { motion, AnimatePresence } from "framer-motion"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -24,6 +25,10 @@ import { SolanaConnectButton } from "@/components/solana-connect-button"
 import { NotificationBell } from "@/components/notification-bell"
 import { useProfile } from "@/components/profile-provider"
 import { FriendsModal } from "@/components/friends-modal"
+
+// 10 preset avatars - store only the filename
+const AVATAR_NAMES = Array.from({ length: 10 }, (_, i) => `${i + 1}.png`)
+const getAvatarPath = (name) => name ? `/avatar/${name}` : null
 
 // Navigation links for the app
 const navLinks = [
@@ -50,8 +55,8 @@ export function Navbar() {
 
   // Edit profile state
   const [editUsername, setEditUsername] = useState("")
-  const [editAvatar, setEditAvatar] = useState(null)
-  const [editAvatarPreview, setEditAvatarPreview] = useState(null)
+  const [selectedAvatarIndex, setSelectedAvatarIndex] = useState(0)
+  const [avatarDirection, setAvatarDirection] = useState(0)
   const [isUpdating, setIsUpdating] = useState(false)
   const [updateError, setUpdateError] = useState("")
 
@@ -196,7 +201,7 @@ export function Navbar() {
                 className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center overflow-hidden hover:opacity-80 transition-opacity border-2 border-neutral-700"
               >
                 {profile?.avatar ? (
-                  <img src={profile.avatar} alt="Profile" className="w-full h-full object-cover" />
+                  <img src={getAvatarPath(profile.avatar)} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
                   <User className="h-5 w-5 text-white" />
                 )}
@@ -241,7 +246,7 @@ export function Navbar() {
                   className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center overflow-hidden hover:opacity-80 transition-opacity border-2 border-neutral-700"
                 >
                   {profile?.avatar ? (
-                    <img src={profile.avatar} alt="Profile" className="w-full h-full object-cover" />
+                    <img src={getAvatarPath(profile.avatar)} alt="Profile" className="w-full h-full object-cover" />
                   ) : (
                     <User className="h-5 w-5 text-white" />
                   )}
@@ -341,61 +346,129 @@ export function Navbar() {
           <div className="space-y-4 py-4">
             {/* Avatar - View or Edit Mode */}
             {isEditMode ? (
-              <div className="flex flex-col items-center gap-2">
-                <div
-                  onClick={() => document.getElementById('avatar-upload')?.click()}
-                  className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity overflow-hidden border-4 border-neutral-700 relative group"
-                >
-                  {(editAvatarPreview || profile?.avatar) ? (
-                    <>
-                      <img
-                        src={editAvatarPreview || profile?.avatar}
-                        alt="Avatar"
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <Edit className="h-6 w-6 text-white" />
-                      </div>
-                    </>
-                  ) : (
-                    <User className="h-12 w-12 text-white" />
-                  )}
+              <div className="flex flex-col items-center gap-3">
+                <p className="text-sm text-neutral-400">Choose your avatar</p>
+                
+                <div className="flex items-center gap-4">
+                  {/* Left Arrow */}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      setAvatarDirection(-1)
+                      setSelectedAvatarIndex((prev) => (prev - 1 + AVATAR_NAMES.length) % AVATAR_NAMES.length)
+                    }}
+                    className="h-10 w-10 rounded-full bg-neutral-800 hover:bg-neutral-700 hover:scale-110 transition-transform"
+                  >
+                    <ChevronLeft className="h-6 w-6" />
+                  </Button>
+
+                  {/* Avatar Display with 3D Rotation Effect */}
+                  <div className="relative w-32 h-32 flex items-center justify-center" style={{ perspective: "600px" }}>
+                    <AnimatePresence initial={false} custom={avatarDirection} mode="wait">
+                      <motion.div
+                        key={selectedAvatarIndex}
+                        custom={avatarDirection}
+                        initial={{ 
+                          rotateY: avatarDirection > 0 ? 90 : -90, 
+                          opacity: 0, 
+                          scale: 0.5,
+                        }}
+                        animate={{ 
+                          rotateY: 0, 
+                          opacity: 1, 
+                          scale: 1,
+                        }}
+                        exit={{ 
+                          rotateY: avatarDirection < 0 ? 90 : -90, 
+                          opacity: 0, 
+                          scale: 0.5,
+                        }}
+                        transition={{
+                          type: "spring",
+                          stiffness: 200,
+                          damping: 20,
+                          duration: 0.5,
+                        }}
+                        className="absolute"
+                        style={{ transformStyle: "preserve-3d" }}
+                      >
+                        <motion.div 
+                          className="w-28 h-28 rounded-full border-4 border-purple-500 overflow-hidden bg-neutral-800 shadow-2xl"
+                          animate={{
+                            boxShadow: [
+                              "0 0 20px rgba(168, 85, 247, 0.4), 0 0 40px rgba(168, 85, 247, 0.2)",
+                              "0 0 30px rgba(6, 182, 212, 0.4), 0 0 60px rgba(6, 182, 212, 0.2)",
+                              "0 0 20px rgba(168, 85, 247, 0.4), 0 0 40px rgba(168, 85, 247, 0.2)",
+                            ],
+                            borderColor: ["#a855f7", "#06b6d4", "#a855f7"],
+                          }}
+                          transition={{
+                            duration: 2,
+                            repeat: Infinity,
+                            ease: "easeInOut",
+                          }}
+                        >
+                          <img
+                            src={getAvatarPath(AVATAR_NAMES[selectedAvatarIndex])}
+                            alt={`Avatar ${selectedAvatarIndex + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                        </motion.div>
+                      </motion.div>
+                    </AnimatePresence>
+                  </div>
+
+                  {/* Right Arrow */}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      setAvatarDirection(1)
+                      setSelectedAvatarIndex((prev) => (prev + 1) % AVATAR_NAMES.length)
+                    }}
+                    className="h-10 w-10 rounded-full bg-neutral-800 hover:bg-neutral-700 hover:scale-110 transition-transform"
+                  >
+                    <ChevronRight className="h-6 w-6" />
+                  </Button>
                 </div>
-                <input
-                  id="avatar-upload"
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files[0]
-                    if (!file) return
 
-                    if (file.size > 2 * 1024 * 1024) {
-                      setUpdateError("Image must be less than 2MB")
-                      return
-                    }
+                {/* Avatar Indicator Dots */}
+                <div className="flex gap-2 mt-2">
+                  {AVATAR_NAMES.map((_, index) => (
+                    <motion.button
+                      key={index}
+                      type="button"
+                      onClick={() => {
+                        setAvatarDirection(index > selectedAvatarIndex ? 1 : -1)
+                        setSelectedAvatarIndex(index)
+                      }}
+                      className={`rounded-full transition-all ${
+                        index === selectedAvatarIndex
+                          ? "bg-gradient-to-r from-purple-500 to-cyan-500"
+                          : "bg-neutral-600 hover:bg-neutral-500"
+                      }`}
+                      animate={{
+                        width: index === selectedAvatarIndex ? 20 : 8,
+                        height: 8,
+                      }}
+                      whileHover={{ scale: 1.2 }}
+                      whileTap={{ scale: 0.9 }}
+                    />
+                  ))}
+                </div>
 
-                    if (!file.type.startsWith('image/')) {
-                      setUpdateError("Please upload an image file")
-                      return
-                    }
-
-                    const reader = new FileReader()
-                    reader.onloadend = () => {
-                      const base64String = reader.result
-                      setEditAvatar(base64String)
-                      setEditAvatarPreview(base64String)
-                    }
-                    reader.readAsDataURL(file)
-                  }}
-                  className="hidden"
-                />
-                <p className="text-xs text-neutral-400">Click avatar to change</p>
+                <p className="text-xs text-neutral-500">
+                  Avatar {selectedAvatarIndex + 1} of {AVATAR_NAMES.length}
+                </p>
               </div>
             ) : (
               <div className="flex flex-col items-center gap-4">
                 <div className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center overflow-hidden border-4 border-neutral-700">
                   {profile?.avatar ? (
-                    <img src={profile.avatar} alt="Profile" className="w-full h-full object-cover" />
+                    <img src={getAvatarPath(profile.avatar)} alt="Profile" className="w-full h-full object-cover" />
                   ) : (
                     <User className="h-12 w-12 text-white" />
                   )}
@@ -500,7 +573,7 @@ export function Navbar() {
                   try {
                     const result = await updateProfile({
                       username: editUsername,
-                      avatar: editAvatar || profile?.avatar,
+                      avatar: AVATAR_NAMES[selectedAvatarIndex], // Save only filename like "1.png"
                     })
 
                     if (result.success) {
@@ -525,8 +598,10 @@ export function Navbar() {
                 onClick={() => {
                   setIsEditMode(true)
                   setEditUsername(profile?.displayName || profile?.username || "")
-                  setEditAvatarPreview(profile?.avatar || null)
-                  setEditAvatar(null)
+                  // Find current avatar index or default to 0
+                  const currentAvatarIndex = AVATAR_NAMES.findIndex(a => a === profile?.avatar)
+                  setSelectedAvatarIndex(currentAvatarIndex >= 0 ? currentAvatarIndex : 0)
+                  setAvatarDirection(0)
                   setUpdateError("")
                 }}
                 variant="outline"

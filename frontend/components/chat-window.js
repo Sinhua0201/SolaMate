@@ -8,6 +8,9 @@ import { useSendMessage, useInitializeChatRoom } from '@/lib/solana/hooks/useCha
 import { useRecordExpense, ExpenseCategory } from '@/lib/solana/hooks/useExpenseProgram';
 import { useRealtimeChatWebSocket } from '@/hooks/useRealtimeChatWebSocket';
 
+// Helper to get avatar path from filename
+const getAvatarPath = (name) => name ? `/avatar/${name}` : null;
+
 export default function ChatWindow({ selectedChat }) {
   const { publicKey, connected, sendTransaction: walletSendTransaction } = useWallet();
   const [aiMessages, setAiMessages] = useState([]); // AI 聊天消息
@@ -780,7 +783,7 @@ export default function ChatWindow({ selectedChat }) {
         {/* Chat Header */}
         <div className="h-16 bg-neutral-900 border-b border-neutral-800 flex items-center px-6">
           <div className={`
-          w-10 h-10 rounded-full flex items-center justify-center mr-3
+          w-10 h-10 rounded-full flex items-center justify-center mr-3 overflow-hidden
           ${selectedChat.type === 'ai'
               ? 'bg-gradient-to-br from-purple-500 to-cyan-500'
               : 'bg-gradient-to-br from-blue-500 to-green-500'
@@ -788,6 +791,8 @@ export default function ChatWindow({ selectedChat }) {
         `}>
             {selectedChat.type === 'ai' ? (
               <Bot className="h-5 w-5 text-white" />
+            ) : selectedChat.avatar ? (
+              <img src={getAvatarPath(selectedChat.avatar)} alt={selectedChat.name} className="w-full h-full object-cover" />
             ) : (
               <User className="h-5 w-5 text-white" />
             )}
@@ -848,6 +853,7 @@ export default function ChatWindow({ selectedChat }) {
                   key={message.id}
                   message={message}
                   isAI={selectedChat.type === 'ai' && !message.isMine}
+                  friendAvatar={selectedChat.type === 'friend' ? selectedChat.avatar : null}
                   onConfirmTransfer={executeTransfer}
                   onPaymentRequestResponse={handlePaymentRequestResponse}
                   onCategorySelect={handleCategorySelect}
@@ -1008,7 +1014,7 @@ export default function ChatWindow({ selectedChat }) {
   );
 }
 
-function MessageBubble({ message, isAI, onConfirmTransfer, onCancelTransfer, onPaymentRequestResponse, onCategorySelect }) {
+function MessageBubble({ message, isAI, friendAvatar, onConfirmTransfer, onCancelTransfer, onPaymentRequestResponse, onCategorySelect }) {
   const isMine = message.isMine;
   const time = new Date(message.timestamp).toLocaleTimeString('en-US', {
     hour: '2-digit',
@@ -1021,7 +1027,7 @@ function MessageBubble({ message, isAI, onConfirmTransfer, onCancelTransfer, onP
         {/* Avatar */}
         {!isMine && (
           <div className={`
-            w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0
+            w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden
             ${isAI
               ? 'bg-gradient-to-br from-purple-500 to-cyan-500'
               : 'bg-gradient-to-br from-blue-500 to-green-500'
@@ -1029,6 +1035,8 @@ function MessageBubble({ message, isAI, onConfirmTransfer, onCancelTransfer, onP
           `}>
             {isAI ? (
               <Bot className="h-4 w-4 text-white" />
+            ) : friendAvatar ? (
+              <img src={getAvatarPath(friendAvatar)} alt="Friend" className="w-full h-full object-cover" />
             ) : (
               <User className="h-4 w-4 text-white" />
             )}
