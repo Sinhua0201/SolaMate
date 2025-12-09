@@ -8,6 +8,7 @@ import { useSendMessage, useInitializeChatRoom } from '@/lib/solana/hooks/useCha
 import { useRecordExpense, ExpenseCategory } from '@/lib/solana/hooks/useExpenseProgram';
 import { useRealtimeChatWebSocket } from '@/hooks/useRealtimeChatWebSocket';
 import { toast } from 'sonner';
+import { updateTaskProgress, addXP, getPetData } from '@/lib/petSystem';
 
 // Helper to get avatar path from filename
 const getAvatarPath = (name) => name ? `/avatar/${name}` : null;
@@ -331,6 +332,22 @@ export default function ChatWindow({ selectedChat }) {
           setInputMessage('');
           // WebSocket 会自动更新消息，但手动刷新确保立即显示
           refreshFriendMessages();
+          
+          // 更新宠物系统的消息任务进度
+          if (publicKey) {
+            const walletAddr = publicKey.toString();
+            const taskResult = updateTaskProgress(walletAddr, 'message');
+            if (taskResult.completed) {
+              // 任务完成，给予奖励 XP
+              const petData = getPetData(walletAddr);
+              if (petData) {
+                addXP(walletAddr, taskResult.reward, null);
+                toast.success('🎉 Task Complete!', {
+                  description: `Send 5 messages - +${taskResult.reward} XP`,
+                });
+              }
+            }
+          }
         } else {
           toast.error('Failed to send message', {
             description: result.error,
@@ -538,6 +555,21 @@ export default function ChatWindow({ selectedChat }) {
         console.error('Failed to record expense:', expenseErr);
         // 不影响转账成功的显示
       }
+
+      // 更新宠物系统的转账任务进度
+      if (publicKey) {
+        const walletAddr = publicKey.toString();
+        const taskResult = updateTaskProgress(walletAddr, 'transfer');
+        if (taskResult.completed) {
+          const petData = getPetData(walletAddr);
+          if (petData) {
+            addXP(walletAddr, taskResult.reward, null);
+            toast.success('🎉 Task Complete!', {
+              description: `Complete 3 transfers - +${taskResult.reward} XP`,
+            });
+          }
+        }
+      }
     } catch (err) {
       console.error('Transfer error:', err);
 
@@ -676,6 +708,21 @@ export default function ChatWindow({ selectedChat }) {
         }
       } catch (expenseErr) {
         console.error('Failed to record expense:', expenseErr);
+      }
+
+      // 更新宠物系统的转账任务进度
+      if (publicKey) {
+        const walletAddr = publicKey.toString();
+        const taskResult = updateTaskProgress(walletAddr, 'transfer');
+        if (taskResult.completed) {
+          const petData = getPetData(walletAddr);
+          if (petData) {
+            addXP(walletAddr, taskResult.reward, null);
+            toast.success('🎉 Task Complete!', {
+              description: `Complete 3 transfers - +${taskResult.reward} XP`,
+            });
+          }
+        }
       }
     } catch (err) {
       console.error('Transfer error:', err);

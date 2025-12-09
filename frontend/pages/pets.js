@@ -1,14 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Navbar } from '@/components/navbar';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { Input } from '@/components/ui/input';
 import { useSelectPet } from '@/lib/solana/hooks/useSocialProgram';
 import { getProgram } from '@/lib/solana/anchorSetup';
 import { getUserProfilePDA } from '@/lib/solana/pdaHelpers';
-import { Loader2, Sparkles, Heart, Zap, Trophy, Target, Star } from 'lucide-react';
+import { Loader2, Sparkles, Heart, Zap, Trophy, Target, Star, MessageCircle, Send, X, Volume2, VolumeX } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   getPetData,
@@ -38,6 +39,20 @@ const PETS = [
 // Helper to get pet image based on mood
 const getPetImage = (folder, isHappy = true) => `/pet/${folder}/${isHappy ? 'happy' : 'sad'}.gif`;
 
+// Pet random greetings
+const PET_GREETINGS = {
+  Dragon: ["I'm feeling mighty today~ 🔥", "Want to hear some ancient wisdom?", "Your XP is looking good!"],
+  Cat: ["Meow~ Have you been saving money?", "...Pet me? Meow~", "How's your wallet doing? Meow~"],
+  Dog: ["Woof woof! You're back!", "Did you chat with friends today? Woof!", "I missed you! Woof woof!"],
+  Pig: ["Oink~ What should we eat today?", "Save money for yummy food! Oink~", "I'm hungry..."],
+  Monkey: ["Hey hey! Tasks done yet?", "Let's play a game!", "I found a money-saving trick!"],
+  Cow: ["Moo~ Steady progress today", "Consistency is key, moo~", "Take it slow, no rush~"],
+  Rabbit: ["Hi there~ (◕ᴗ◕✿)", "Let's do our best today~", "Hop hop, so happy~"],
+  Tiger: ["Roar! Any big moves today?", "I'll protect your wallet!", "Any investment plans?"],
+  Goat: ["Baa~ How are you feeling?", "Balance is important, baa~", "Enjoy life slowly~"],
+  Mouse: ["Squeak! Any news?", "I heard some gossip... squeak", "Your info mouse is here!"],
+};
+
 export default function PetsPage() {
   const { publicKey, connected } = useWallet();
   const [currentPet, setCurrentPet] = useState(null);
@@ -48,6 +63,15 @@ export default function PetsPage() {
   const [feedCooldown, setFeedCooldown] = useState(0);
   const [playCooldown, setPlayCooldown] = useState(0);
   const { selectPet, isLoading: isSelecting } = useSelectPet();
+  
+  // Pet chat state
+  const [showChatModal, setShowChatModal] = useState(false);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatInput, setChatInput] = useState('');
+  const [isChatLoading, setIsChatLoading] = useState(false);
+  const [petGreeting, setPetGreeting] = useState('');
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const chatEndRef = useRef(null);
 
   useEffect(() => {
     if (connected && publicKey) {
@@ -56,6 +80,27 @@ export default function PetsPage() {
       return () => clearInterval(interval);
     }
   }, [connected, publicKey]);
+
+  // 随机更换宠物问候语
+  useEffect(() => {
+    if (currentPet) {
+      const pet = PETS[currentPet - 1];
+      const greetings = PET_GREETINGS[pet?.name] || PET_GREETINGS.Cat;
+      setPetGreeting(greetings[Math.floor(Math.random() * greetings.length)]);
+      
+      // 每30秒换一次问候语
+      const interval = setInterval(() => {
+        setPetGreeting(greetings[Math.floor(Math.random() * greetings.length)]);
+      }, 30000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [currentPet]);
+
+  // 聊天滚动到底部
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages]);
 
   const loadPetInfo = async () => {
     setIsLoading(true);
@@ -100,6 +145,74 @@ export default function PetsPage() {
       setPetData(data);
       setDailyTasks(getDailyTasks(publicKey.toString()));
     }
+  };
+
+  // Play TTS audio
+  const playPetVoice = async (text) => {
+    if (!voiceEnabled) return;
+    
+    try {
+      const response = await fetch('/api/pet-tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.audio) {
+        const audio = new Audio(`data:audio/mpeg;base64,${data.audio}`);
+        audio.play().catch(err => console.log('Audio play failed:', err));
+      }
+    } catch (err) {
+      console.error('TTS error:', err);
+    }
+  };
+
+  // Send chat message to pet
+  const handleSendChat = async () => {
+    if (!chatInput.trim() || isChatLoading) return;
+    
+    const userMessage = chatInput.trim();
+    setChatInput('');
+    setChatMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    setIsChatLoading(true);
+    
+    try {
+      const pet = PETS[currentPet - 1];
+      const response = await fetch('/api/pet-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: userMessage,
+          petName: pet?.name || 'Cat',
+          userStats: petData,
+          dailyTasks: dailyTasks,
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.reply) {
+        setChatMessages(prev => [...prev, { role: 'pet', content: data.reply }]);
+        // Play TTS for pet reply
+        playPetVoice(data.reply);
+      } else {
+        setChatMessages(prev => [...prev, { role: 'pet', content: '...*yawns*' }]);
+      }
+    } catch (err) {
+      console.error('Chat error:', err);
+      setChatMessages(prev => [...prev, { role: 'pet', content: 'Zzz... I fell asleep...' }]);
+    } finally {
+      setIsChatLoading(false);
+    }
+  };
+
+  const openChatModal = () => {
+    const pet = PETS[currentPet - 1];
+    const greetings = PET_GREETINGS[pet?.name] || PET_GREETINGS.Cat;
+    setChatMessages([{ role: 'pet', content: greetings[Math.floor(Math.random() * greetings.length)] }]);
+    setShowChatModal(true);
   };
 
   const handleFeed = () => {
@@ -283,14 +396,38 @@ export default function PetsPage() {
           {/* Left Column - Pet Display */}
           <div className="lg:col-span-2 space-y-6">
             {/* Main Pet Card */}
-            <Card className="relative overflow-hidden glass-card rounded-3xl border border-purple-200/50 shadow-2xl shadow-purple-500/20">
+            <Card className="relative overflow-visible glass-card rounded-3xl border border-purple-200/50 shadow-2xl shadow-purple-500/20">
               {/* Background glow */}
               <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-cyan-500/5" />
               
               <div className="relative p-8">
-                {/* Pet Image - shows happy if happiness >= 50, sad otherwise */}
+                {/* Pet Image with Speech Bubble */}
                 <div className="relative w-64 h-64 mx-auto mb-6">
                   <div className="absolute inset-0 bg-gradient-to-br from-purple-500/20 to-cyan-500/20 rounded-full blur-3xl animate-pulse" />
+                  
+                  {/* Speech Bubble */}
+                  {petGreeting && (
+                    <div 
+                      onClick={openChatModal}
+                      className="absolute -top-12 -right-24 z-20 cursor-pointer group/bubble"
+                    >
+                      <div className="relative bg-white rounded-3xl px-5 py-4 shadow-[0_8px_30px_rgb(0,0,0,0.08)] max-w-[220px] hover:scale-105 ios-transition hover:shadow-[0_20px_50px_rgb(147,51,234,0.15)]">
+                        <p className="text-[15px] text-neutral-800 leading-relaxed font-medium">{petGreeting}</p>
+                        
+                        <div className="flex items-center gap-2 mt-3">
+                          <div className="flex items-center gap-1.5 text-xs text-purple-500 font-medium bg-purple-50 px-3 py-1.5 rounded-full">
+                            <MessageCircle className="h-3.5 w-3.5" />
+                            <span>Tap to chat</span>
+                          </div>
+                        </div>
+                        
+                        {/* Bubble tail */}
+                        <div className="absolute -bottom-3 left-10">
+                          <div className="w-6 h-6 bg-white rotate-45 rounded-sm shadow-[4px_4px_8px_rgb(0,0,0,0.04)]" />
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   <Image 
                     src={getPetImage(pet.folder, (petData?.happiness || 100) >= 50)} 
                     alt={pet.name} 
@@ -466,6 +603,184 @@ export default function PetsPage() {
             <p className="text-neutral-800 text-xl font-semibold">Selecting your pet...</p>
             <p className="text-neutral-500 mt-2">Please wait a moment</p>
           </Card>
+        </div>
+      )}
+
+      {/* Pet Chat Modal */}
+      {showChatModal && (
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-xl flex items-end sm:items-center justify-center z-50">
+          {/* iOS style modal */}
+          <div className="w-full sm:max-w-md bg-white/95 backdrop-blur-2xl sm:rounded-3xl rounded-t-3xl shadow-2xl overflow-hidden ios-transition animate-in slide-in-from-bottom duration-300">
+            {/* iOS Header with blur */}
+            <div className="relative">
+              {/* Background with pet image blur */}
+              <div className="absolute inset-0 overflow-hidden">
+                <Image 
+                  src={getPetImage(pet.folder, (petData?.happiness || 100) >= 50)} 
+                  alt="" 
+                  fill 
+                  className="object-cover scale-150 blur-2xl opacity-30"
+                  unoptimized 
+                />
+                <div className="absolute inset-0 bg-gradient-to-b from-white/60 to-white/90" />
+              </div>
+              
+              {/* Header content */}
+              <div className="relative px-5 pt-4 pb-3">
+                {/* iOS drag indicator */}
+                <div className="w-10 h-1 bg-neutral-300 rounded-full mx-auto mb-4 sm:hidden" />
+                
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    {/* Pet avatar with status ring */}
+                    <div className="relative">
+                      <div className={`w-14 h-14 rounded-full p-0.5 ${
+                        (petData?.happiness || 100) >= 50 
+                          ? 'bg-gradient-to-br from-green-400 to-emerald-500' 
+                          : 'bg-gradient-to-br from-orange-400 to-red-500'
+                      }`}>
+                        <div className="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden">
+                          <Image 
+                            src={getPetImage(pet.folder, (petData?.happiness || 100) >= 50)} 
+                            alt={pet.name} 
+                            width={48} 
+                            height={48} 
+                            className="object-contain"
+                            unoptimized 
+                          />
+                        </div>
+                      </div>
+                      {/* Online indicator */}
+                      <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 rounded-full border-2 border-white" />
+                    </div>
+                    
+                    <div>
+                      <h3 className="text-neutral-900 font-semibold text-lg">{pet.name}</h3>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full">
+                          Lv.{petData?.level || 1}
+                        </span>
+                        <span className="text-xs text-neutral-500">
+                          {(petData?.happiness || 100) >= 50 ? '😊 Happy' : '😢 Needs care'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    {/* Voice toggle button */}
+                    <button 
+                      onClick={() => setVoiceEnabled(!voiceEnabled)}
+                      className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+                        voiceEnabled 
+                          ? 'bg-purple-100 text-purple-600' 
+                          : 'bg-neutral-200/80 text-neutral-400'
+                      }`}
+                      title={voiceEnabled ? 'Voice on' : 'Voice off'}
+                    >
+                      {voiceEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+                    </button>
+                    
+                    {/* Close button */}
+                    <button 
+                      onClick={() => setShowChatModal(false)}
+                      className="w-8 h-8 rounded-full bg-neutral-200/80 hover:bg-neutral-300/80 flex items-center justify-center transition-colors"
+                    >
+                      <X className="h-4 w-4 text-neutral-600" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Chat Messages - iOS style */}
+            <div className="h-80 overflow-y-auto px-4 py-3 space-y-2 bg-gradient-to-b from-neutral-50 to-white">
+              {chatMessages.map((msg, idx) => (
+                <div 
+                  key={idx} 
+                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} items-end gap-2`}
+                >
+                  {/* Pet avatar for pet messages */}
+                  {msg.role === 'pet' && (
+                    <div className="w-7 h-7 rounded-full bg-purple-100 flex-shrink-0 overflow-hidden">
+                      <Image 
+                        src={getPetImage(pet.folder, true)} 
+                        alt="" 
+                        width={28} 
+                        height={28} 
+                        className="object-contain"
+                        unoptimized 
+                      />
+                    </div>
+                  )}
+                  
+                  <div 
+                    className={`max-w-[75%] px-4 py-2.5 ${
+                      msg.role === 'user' 
+                        ? 'bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-2xl rounded-br-sm shadow-[0_4px_15px_rgb(147,51,234,0.3)]' 
+                        : 'bg-white text-neutral-800 rounded-2xl rounded-bl-sm shadow-[0_2px_10px_rgb(0,0,0,0.06)]'
+                    }`}
+                  >
+                    <p className="text-[15px] leading-relaxed">{msg.content}</p>
+                  </div>
+                </div>
+              ))}
+              
+              {/* Typing indicator */}
+              {isChatLoading && (
+                <div className="flex justify-start items-end gap-2">
+                  <div className="w-7 h-7 rounded-full bg-purple-100 flex-shrink-0 overflow-hidden">
+                    <Image 
+                      src={getPetImage(pet.folder, true)} 
+                      alt="" 
+                      width={28} 
+                      height={28} 
+                      className="object-contain"
+                      unoptimized 
+                    />
+                  </div>
+                  <div className="bg-white rounded-2xl rounded-bl-sm shadow-[0_2px_10px_rgb(0,0,0,0.06)] px-4 py-3">
+                    <div className="flex gap-1.5">
+                      <span className="w-2 h-2 bg-neutral-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <span className="w-2 h-2 bg-neutral-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <span className="w-2 h-2 bg-neutral-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div ref={chatEndRef} />
+            </div>
+
+            {/* Input bar */}
+            <div className="px-4 py-3 bg-white/80 backdrop-blur-xl">
+              <div className="flex items-center gap-2">
+                <div className="flex-1 relative">
+                  <input
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSendChat()}
+                    placeholder={`Message ${pet.name}...`}
+                    className="w-full px-4 py-2.5 bg-neutral-100 rounded-full text-[15px] placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:bg-white border border-transparent focus:border-purple-200 transition-all"
+                    disabled={isChatLoading}
+                  />
+                </div>
+                <button
+                  onClick={handleSendChat}
+                  disabled={!chatInput.trim() || isChatLoading}
+                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+                    chatInput.trim() && !isChatLoading
+                      ? 'bg-purple-500 hover:bg-purple-600 text-white scale-100'
+                      : 'bg-neutral-200 text-neutral-400 scale-95'
+                  }`}
+                >
+                  <Send className="h-4 w-4" />
+                </button>
+              </div>
+              
+              {/* Safe area for iOS */}
+              <div className="h-safe-area-inset-bottom" />
+            </div>
+          </div>
         </div>
       )}
     </div>

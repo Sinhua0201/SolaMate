@@ -4,7 +4,6 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { getProgram } from '@/lib/solana/anchorSetup';
 import { Navbar } from '@/components/navbar';
 
-// Import WalletMultiButton dynamically to avoid SSR issues
 const WalletMultiButton = dynamic(
     async () => (await import('@solana/wallet-adapter-react-ui')).WalletMultiButton,
     { ssr: false }
@@ -27,31 +26,17 @@ export default function MyApplicationsPage() {
             setLoading(true);
             const program = getProgram(wallet);
 
-            // Get all my applications
             const allApps = await program.account.application.all([
-                {
-                    memcmp: {
-                        offset: 8 + 32, // discriminator + event pubkey
-                        bytes: publicKey.toBase58(),
-                    }
-                }
+                { memcmp: { offset: 8 + 32, bytes: publicKey.toBase58() } }
             ]);
 
-            // Get event info for each application
             const appsWithEvents = await Promise.all(
                 allApps.map(async (app) => {
                     try {
                         const event = await program.account.fundingEvent.fetch(app.account.event);
-                        return {
-                            ...app,
-                            eventData: event
-                        };
+                        return { ...app, eventData: event };
                     } catch (error) {
-                        console.error('Failed to fetch event info:', error);
-                        return {
-                            ...app,
-                            eventData: null
-                        };
+                        return { ...app, eventData: null };
                     }
                 })
             );
@@ -64,36 +49,15 @@ export default function MyApplicationsPage() {
         }
     };
 
-    const formatSOL = (lamports) => {
-        return (lamports / 1e9).toFixed(4);
-    };
+    const formatSOL = (lamports) => (lamports / 1e9).toFixed(4);
+    const formatDate = (timestamp) => new Date(timestamp * 1000).toLocaleDateString('en-US');
 
-    const formatDate = (timestamp) => {
-        return new Date(timestamp * 1000).toLocaleString('en-US');
-    };
-
-    const getStatusText = (status) => {
-        if (status.pending) return 'Pending';
-        if (status.approved) return 'Approved';
-        if (status.rejected) return 'Rejected';
-        if (status.paid) return 'Paid';
-        return 'Unknown';
-    };
-
-    const getStatusColor = (status) => {
-        if (status.pending) return 'bg-yellow-100 text-yellow-800 border-yellow-300';
-        if (status.approved) return 'bg-green-100 text-green-800 border-green-300';
-        if (status.rejected) return 'bg-red-100 text-red-800 border-red-300';
-        if (status.paid) return 'bg-blue-100 text-blue-800 border-blue-300';
-        return 'bg-gray-100 text-gray-800 border-gray-300';
-    };
-
-    const getStatusIcon = (status) => {
-        if (status.pending) return '⏳';
-        if (status.approved) return '✅';
-        if (status.rejected) return '❌';
-        if (status.paid) return '💰';
-        return '❓';
+    const getStatusConfig = (status) => {
+        if (status.pending) return { text: 'Pending', color: 'bg-amber-100 text-amber-700 border-amber-200', icon: '⏳', message: 'Your application is under review' };
+        if (status.approved) return { text: 'Approved', color: 'bg-green-100 text-green-700 border-green-200', icon: '✅', message: 'Approved! Awaiting disbursement' };
+        if (status.rejected) return { text: 'Rejected', color: 'bg-red-100 text-red-700 border-red-200', icon: '❌', message: 'Application was not approved' };
+        if (status.paid) return { text: 'Paid', color: 'bg-blue-100 text-blue-700 border-blue-200', icon: '💰', message: 'Funds sent to your wallet!' };
+        return { text: 'Unknown', color: 'bg-gray-100 text-gray-700 border-gray-200', icon: '❓', message: '' };
     };
 
     if (!publicKey) {
@@ -101,10 +65,14 @@ export default function MyApplicationsPage() {
             <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-purple-50 flex items-center justify-center">
                 <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-purple-200/40 via-transparent to-transparent pointer-events-none" />
                 <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_bottom_right,_var(--tw-gradient-stops))] from-cyan-200/30 via-transparent to-transparent pointer-events-none" />
-
                 <div className="text-center relative z-10">
+                    <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-purple-500 to-cyan-500 rounded-[28px] flex items-center justify-center shadow-[0_10px_40px_rgb(124,58,237,0.3)]">
+                        <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                    </div>
                     <h1 className="text-3xl font-bold mb-4 bg-gradient-to-r from-purple-600 to-cyan-600 bg-clip-text text-transparent">My Applications</h1>
-                    <p className="text-neutral-600 mb-6">Please connect your wallet</p>
+                    <p className="text-neutral-500 mb-6">Please connect your wallet to continue</p>
                     <WalletMultiButton />
                 </div>
             </div>
@@ -115,142 +83,126 @@ export default function MyApplicationsPage() {
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-purple-50">
             <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-purple-200/40 via-transparent to-transparent pointer-events-none" />
             <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_bottom_right,_var(--tw-gradient-stops))] from-cyan-200/30 via-transparent to-transparent pointer-events-none" />
-
             <Navbar />
 
             <div className="max-w-4xl mx-auto px-4 py-8 relative z-10">
                 {/* Header */}
-                <div className="text-center mb-8">
+                <div className="text-center mb-10">
+                    <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-purple-500 to-cyan-500 rounded-2xl flex items-center justify-center shadow-[0_8px_30px_rgb(124,58,237,0.25)]">
+                        <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                    </div>
                     <h1 className="text-4xl md:text-5xl font-bold mb-2">
-                        <span className="bg-gradient-to-r from-purple-600 to-cyan-600 bg-clip-text text-transparent">
-                            My Applications
-                        </span>
+                        <span className="bg-gradient-to-r from-purple-600 to-cyan-600 bg-clip-text text-transparent">My Applications</span>
                     </h1>
-                    <p className="text-neutral-600">Track your funding application status</p>
+                    <p className="text-neutral-500 text-lg">Track your funding application status</p>
                 </div>
 
                 {loading ? (
                     <div className="text-center py-12">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
-                        <p className="mt-4 text-neutral-600">Loading...</p>
+                        <p className="mt-4 text-neutral-500">Loading...</p>
                     </div>
                 ) : applications.length === 0 ? (
-                    <div className="text-center py-12 bg-white/80 backdrop-blur-sm rounded-lg shadow border border-purple-200">
-                        <p className="text-neutral-600 mb-4">You haven't submitted any applications yet</p>
+                    <div className="text-center py-16 bg-white rounded-3xl shadow-[0_4px_20px_rgb(0,0,0,0.08),0_8px_40px_rgb(124,58,237,0.12)] border-2 border-purple-100">
+                        <div className="w-16 h-16 mx-auto mb-4 bg-neutral-100 rounded-full flex items-center justify-center">
+                            <svg className="w-8 h-8 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                        </div>
+                        <p className="text-neutral-600 text-lg mb-2">No Applications Yet</p>
+                        <p className="text-neutral-400 text-sm mb-6">You haven't submitted any applications</p>
                         <a
                             href="/funding-apply"
-                            className="inline-block px-6 py-2 bg-gradient-to-r from-purple-600 to-cyan-600 text-white rounded-lg hover:from-purple-700 hover:to-cyan-700"
+                            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-cyan-600 text-white rounded-2xl font-medium shadow-lg shadow-purple-500/25 hover:from-purple-700 hover:to-cyan-700 transition-all"
                         >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            </svg>
                             Apply for Funding
                         </a>
                     </div>
                 ) : (
-                    <div className="space-y-4">
-                        {applications.map((app) => (
-                            <div
-                                key={app.publicKey.toString()}
-                                className="bg-white/80 backdrop-blur-sm rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow border border-purple-100"
-                            >
-                                {/* Status Badge */}
-                                <div className="flex justify-between items-start mb-4">
-                                    <div>
-                                        <h3 className="text-xl font-bold text-neutral-800">
-                                            {app.eventData?.title || 'Event Closed'}
-                                        </h3>
-                                        <p className="text-sm text-neutral-500 mt-1">
-                                            Applied: {formatDate(app.account.appliedAt)}
-                                        </p>
-                                    </div>
-                                    <span className={`px-4 py-2 rounded-full text-sm font-semibold border-2 ${getStatusColor(app.account.status)}`}>
-                                        {getStatusIcon(app.account.status)} {getStatusText(app.account.status)}
-                                    </span>
-                                </div>
-
-                                {/* Amount Info */}
-                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
-                                    <div className="bg-purple-50 p-3 rounded-lg border border-purple-200">
-                                        <p className="text-sm text-neutral-600 mb-1">Requested Amount</p>
-                                        <p className="text-lg font-bold text-purple-600">
-                                            {formatSOL(app.account.requestedAmount)} SOL
-                                        </p>
-                                    </div>
-
-                                    {app.account.approvedAmount > 0 && (
-                                        <div className="bg-green-50 p-3 rounded-lg border border-green-200">
-                                            <p className="text-sm text-neutral-600 mb-1">Approved Amount</p>
-                                            <p className="text-lg font-bold text-green-600">
-                                                {formatSOL(app.account.approvedAmount)} SOL
-                                            </p>
+                    <div className="bg-white rounded-3xl shadow-[0_4px_20px_rgb(0,0,0,0.08),0_8px_40px_rgb(124,58,237,0.12)] border-2 border-purple-100 overflow-hidden">
+                        {applications.map((app, index) => {
+                            const statusConfig = getStatusConfig(app.account.status);
+                            return (
+                                <div
+                                    key={app.publicKey.toString()}
+                                    className={`p-5 hover:bg-purple-50/30 transition-colors ${index !== applications.length - 1 ? 'border-b-2 border-purple-50' : ''}`}
+                                >
+                                    <div className="flex items-start gap-4">
+                                        {/* Icon */}
+                                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center flex-shrink-0 shadow-lg shadow-purple-500/20">
+                                            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
                                         </div>
-                                    )}
 
-                                    {app.eventData && (
-                                        <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
-                                            <p className="text-sm text-neutral-600 mb-1">Event Remaining</p>
-                                            <p className="text-lg font-bold text-blue-600">
-                                                {formatSOL(app.eventData.remainingAmount)} SOL
-                                            </p>
+                                        {/* Content */}
+                                        <div className="flex-1 min-w-0">
+                                            {/* Title & Status */}
+                                            <div className="flex items-center justify-between gap-3 mb-2">
+                                                <h3 className="font-semibold text-neutral-800 truncate">
+                                                    {app.eventData?.title || 'Event Closed'}
+                                                </h3>
+                                                <span className={`px-3 py-1 text-xs font-medium rounded-full border flex-shrink-0 ${statusConfig.color}`}>
+                                                    {statusConfig.icon} {statusConfig.text}
+                                                </span>
+                                            </div>
+
+                                            {/* Amount Info */}
+                                            <div className="flex items-center gap-4 text-sm mb-2">
+                                                <div>
+                                                    <span className="text-neutral-500">Requested: </span>
+                                                    <span className="font-semibold text-purple-600">{formatSOL(app.account.requestedAmount)} SOL</span>
+                                                </div>
+                                                {app.account.approvedAmount > 0 && (
+                                                    <>
+                                                        <span className="text-neutral-300">→</span>
+                                                        <div>
+                                                            <span className="text-neutral-500">Approved: </span>
+                                                            <span className="font-semibold text-green-600">{formatSOL(app.account.approvedAmount)} SOL</span>
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </div>
+
+                                            {/* Date & Link */}
+                                            <div className="flex items-center gap-3 text-sm text-neutral-500">
+                                                <span>{formatDate(app.account.appliedAt)}</span>
+                                                {app.account.ipfsHash && (
+                                                    <>
+                                                        <span className="text-neutral-300">•</span>
+                                                        <a
+                                                            href={`https://gateway.pinata.cloud/ipfs/${app.account.ipfsHash}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="text-purple-600 hover:text-purple-700 font-medium"
+                                                        >
+                                                            View Details →
+                                                        </a>
+                                                    </>
+                                                )}
+                                            </div>
+
+                                            {/* Status Message */}
+                                            {statusConfig.message && (
+                                                <div className={`mt-3 px-3 py-2 rounded-xl text-sm ${
+                                                    app.account.status.pending ? 'bg-amber-50 text-amber-700' :
+                                                    app.account.status.approved ? 'bg-green-50 text-green-700' :
+                                                    app.account.status.rejected ? 'bg-red-50 text-red-700' :
+                                                    app.account.status.paid ? 'bg-blue-50 text-blue-700' : ''
+                                                }`}>
+                                                    {statusConfig.message}
+                                                </div>
+                                            )}
                                         </div>
-                                    )}
+                                    </div>
                                 </div>
-
-                                {/* Application Details */}
-                                <div className="border-t border-purple-100 pt-4">
-                                    <p className="text-sm text-neutral-600">
-                                        <span className="font-semibold">Application ID:</span>{' '}
-                                        <span className="font-mono text-xs">
-                                            {app.publicKey.toString()}
-                                        </span>
-                                    </p>
-                                    {app.account.ipfsHash && (
-                                        <p className="text-sm text-neutral-600 mt-1">
-                                            <span className="font-semibold">IPFS:</span>{' '}
-                                            <a
-                                                href={`https://gateway.pinata.cloud/ipfs/${app.account.ipfsHash}`}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="text-purple-600 hover:underline"
-                                            >
-                                                View Details
-                                            </a>
-                                        </p>
-                                    )}
-                                </div>
-
-                                {/* Status Messages */}
-                                {app.account.status.pending && (
-                                    <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                                        <p className="text-sm text-yellow-800">
-                                            ⏳ Your application is under review, please be patient...
-                                        </p>
-                                    </div>
-                                )}
-
-                                {app.account.status.approved && (
-                                    <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                                        <p className="text-sm text-green-800">
-                                            ✅ Congratulations! Your application has been approved, awaiting fund disbursement...
-                                        </p>
-                                    </div>
-                                )}
-
-                                {app.account.status.rejected && (
-                                    <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                                        <p className="text-sm text-red-800">
-                                            ❌ Sorry, your application was not approved
-                                        </p>
-                                    </div>
-                                )}
-
-                                {app.account.status.paid && (
-                                    <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                                        <p className="text-sm text-blue-800">
-                                            💰 Funds have been disbursed to your wallet!
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </div>

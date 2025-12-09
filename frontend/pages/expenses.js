@@ -414,7 +414,7 @@ export default function ExpensesPage() {
                 {records.length === 0 ? (
                   <p className="text-center text-neutral-500 py-8">No transactions found</p>
                 ) : (
-                  <div className="space-y-3 max-h-[600px] overflow-y-auto">
+                  <div className="space-y-3 max-h-[518px] overflow-y-auto">
                     {records.map((record) => {
                       const category = CATEGORIES.find(c => c.id === record.category.toLowerCase());
                       return (

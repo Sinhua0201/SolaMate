@@ -249,33 +249,54 @@ export function Navbar() {
               <ChevronDown className={`h-4 w-4 transition-transform ${showFundingDropdown ? 'rotate-180' : ''}`} />
             </button>
 
-            {showFundingDropdown && (
-              <>
-                {/* Backdrop to close dropdown */}
-                <div
-                  className="fixed inset-0 z-40"
-                  onClick={() => setShowFundingDropdown(false)}
-                />
+            <AnimatePresence>
+              {showFundingDropdown && (
+                <>
+                  {/* Backdrop to close dropdown */}
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 z-40"
+                    onClick={() => setShowFundingDropdown(false)}
+                  />
 
-                {/* Dropdown Menu */}
-                <div className="absolute top-full right-0 mt-2 w-56 bg-white/95 backdrop-blur-sm border border-purple-200 rounded-lg shadow-xl z-50 overflow-hidden">
-                  {fundingLinks.map((link) => (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      onClick={() => setShowFundingDropdown(false)}
-                      className={`flex items-center gap-3 px-4 py-3 text-sm transition-colors ${link.href === pathname
-                          ? 'bg-gradient-to-r from-purple-600 to-cyan-600 text-white'
-                          : 'text-neutral-700 hover:bg-purple-50'
-                        }`}
-                    >
-                      <span className="text-lg">{link.icon}</span>
-                      <span>{link.name}</span>
-                    </Link>
-                  ))}
-                </div>
-              </>
-            )}
+                  {/* Dropdown Menu */}
+                  <motion.div
+                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                    className="absolute top-full right-0 mt-3 w-60 bg-white rounded-2xl shadow-[0_10px_40px_rgb(0,0,0,0.12),0_4px_20px_rgb(124,58,237,0.15)] border-2 border-purple-100 z-50 overflow-hidden"
+                  >
+                    <div className="p-2">
+                      {fundingLinks.map((link, index) => (
+                        <Link
+                          key={link.href}
+                          href={link.href}
+                          onClick={() => setShowFundingDropdown(false)}
+                          className={`flex items-center gap-3 px-4 py-3 text-sm rounded-xl transition-all duration-200 ${link.href === pathname
+                              ? 'bg-gradient-to-r from-purple-500 to-cyan-500 text-white shadow-lg shadow-purple-500/25'
+                              : 'text-neutral-700 hover:bg-purple-50/80 active:bg-purple-100'
+                            }`}
+                        >
+                          <span className="w-8 h-8 flex items-center justify-center bg-white/80 rounded-xl text-base shadow-sm border border-neutral-100">
+                            {link.icon}
+                          </span>
+                          <span className="font-medium">{link.name}</span>
+                          {link.href === pathname && (
+                            <motion.div
+                              layoutId="activeIndicator"
+                              className="ml-auto w-2 h-2 bg-white rounded-full"
+                            />
+                          )}
+                        </Link>
+                      ))}
+                    </div>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
           </div>
 
           <div className="flex items-center gap-3">
