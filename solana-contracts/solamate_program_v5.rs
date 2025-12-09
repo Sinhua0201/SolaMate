@@ -316,6 +316,12 @@ pub mod solamate_program {
             ErrorCode::EventExpired
         );
         
+        // 创建者不能申请自己的活动
+        require!(
+            ctx.accounts.applicant.key() != event.creator,
+            ErrorCode::CannotApplyToOwnEvent
+        );
+        
         application.event = event.key();
         application.applicant = ctx.accounts.applicant.key();
         application.requested_amount = requested_amount;
@@ -1096,4 +1102,7 @@ pub enum ErrorCode {
     
     #[msg("Application not approved")]
     ApplicationNotApproved,
+    
+    #[msg("Cannot apply to your own event")]
+    CannotApplyToOwnEvent,
 }

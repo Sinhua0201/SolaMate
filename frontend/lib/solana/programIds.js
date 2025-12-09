@@ -36,4 +36,6 @@ export const SEEDS = {
   MESSAGE: 'message',
   EXPENSE_STATS: 'expense_stats',
   EXPENSE_RECORD: 'expense_record',
+  FUNDING_EVENT: 'funding_event',
+  APPLICATION: 'application',
 };

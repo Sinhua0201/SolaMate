@@ -29,6 +29,7 @@
     "crypto-browserify": "^3.12.1",
     "date-fns": "^3.0.0",
     "firebase": "^12.6.0",
+    "formidable": "^3.5.4",
     "framer-motion": "^12.23.22",
     "lucide-react": "^0.544.0",
     "motion": "^12.23.22",

@@ -4,7 +4,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/router"
 import { useState, useEffect } from "react"
-import { Menu, Wallet, Copy, Check, User, Edit, Users, ChevronLeft, ChevronRight } from "lucide-react"
+import { Menu, Wallet, Copy, Check, User, Edit, Users, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react"
 import { useWallet, useConnection } from '@solana/wallet-adapter-react'
 import { LAMPORTS_PER_SOL } from '@solana/web3.js'
 import { motion, AnimatePresence } from "framer-motion"
@@ -38,6 +38,14 @@ const navLinks = [
   { name: "Expenses", href: "/expenses" },
 ]
 
+// Funding dropdown links
+const fundingLinks = [
+  { name: "Create Event", href: "/test-ipfs", icon: "➕" },
+  { name: "Apply for Funding", href: "/funding-apply", icon: "📝" },
+  { name: "Manage Events", href: "/funding-manage", icon: "⚙️" },
+  { name: "My Applications", href: "/my-applications", icon: "📋" },
+]
+
 
 
 /**
@@ -59,6 +67,7 @@ export function Navbar() {
   const [avatarDirection, setAvatarDirection] = useState(0)
   const [isUpdating, setIsUpdating] = useState(false)
   const [updateError, setUpdateError] = useState("")
+  const [showFundingDropdown, setShowFundingDropdown] = useState(false)
 
   // Solana wallet hooks
   const { publicKey, connected } = useWallet()
@@ -155,8 +164,8 @@ export function Navbar() {
                     key={link.href}
                     href={link.href}
                     className={`flex items-center gap-2 text-base font-medium transition-colors px-3 py-2 rounded-lg ${pathname === link.href
-                        ? "text-purple-600 bg-purple-100/50"
-                        : "text-neutral-600 hover:text-neutral-800 hover:bg-black/5"
+                      ? "text-purple-600 bg-purple-100/50"
+                      : "text-neutral-600 hover:text-neutral-800 hover:bg-black/5"
                       }`}
                   >
                     {link.name}
@@ -219,13 +228,55 @@ export function Navbar() {
               key={link.href}
               href={link.href}
               className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${pathname === link.href
-                  ? "text-purple-600"
-                  : "text-neutral-600 hover:text-neutral-800"
+                ? "text-purple-600"
+                : "text-neutral-600 hover:text-neutral-800"
                 }`}
             >
               {link.name}
             </Link>
           ))}
+
+          {/* Funding Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowFundingDropdown(!showFundingDropdown)}
+              className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${fundingLinks.some(link => link.href === pathname)
+                  ? "text-purple-600"
+                  : "text-neutral-600 hover:text-neutral-800"
+                }`}
+            >
+              Funding
+              <ChevronDown className={`h-4 w-4 transition-transform ${showFundingDropdown ? 'rotate-180' : ''}`} />
+            </button>
+
+            {showFundingDropdown && (
+              <>
+                {/* Backdrop to close dropdown */}
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setShowFundingDropdown(false)}
+                />
+
+                {/* Dropdown Menu */}
+                <div className="absolute top-full right-0 mt-2 w-56 bg-white/95 backdrop-blur-sm border border-purple-200 rounded-lg shadow-xl z-50 overflow-hidden">
+                  {fundingLinks.map((link) => (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      onClick={() => setShowFundingDropdown(false)}
+                      className={`flex items-center gap-3 px-4 py-3 text-sm transition-colors ${link.href === pathname
+                          ? 'bg-gradient-to-r from-purple-600 to-cyan-600 text-white'
+                          : 'text-neutral-700 hover:bg-purple-50'
+                        }`}
+                    >
+                      <span className="text-lg">{link.icon}</span>
+                      <span>{link.name}</span>
+                    </Link>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
 
           <div className="flex items-center gap-3">
             {connected && (
@@ -348,7 +399,7 @@ export function Navbar() {
             {isEditMode ? (
               <div className="flex flex-col items-center gap-3">
                 <p className="text-sm text-neutral-400">Choose your avatar</p>
-                
+
                 <div className="flex items-center gap-4">
                   {/* Left Arrow */}
                   <Button
@@ -370,19 +421,19 @@ export function Navbar() {
                       <motion.div
                         key={selectedAvatarIndex}
                         custom={avatarDirection}
-                        initial={{ 
-                          rotateY: avatarDirection > 0 ? 90 : -90, 
-                          opacity: 0, 
+                        initial={{
+                          rotateY: avatarDirection > 0 ? 90 : -90,
+                          opacity: 0,
                           scale: 0.5,
                         }}
-                        animate={{ 
-                          rotateY: 0, 
-                          opacity: 1, 
+                        animate={{
+                          rotateY: 0,
+                          opacity: 1,
                           scale: 1,
                         }}
-                        exit={{ 
-                          rotateY: avatarDirection < 0 ? 90 : -90, 
-                          opacity: 0, 
+                        exit={{
+                          rotateY: avatarDirection < 0 ? 90 : -90,
+                          opacity: 0,
                           scale: 0.5,
                         }}
                         transition={{
@@ -394,7 +445,7 @@ export function Navbar() {
                         className="absolute"
                         style={{ transformStyle: "preserve-3d" }}
                       >
-                        <motion.div 
+                        <motion.div
                           className="w-28 h-28 rounded-full border-4 border-purple-500 overflow-hidden bg-white shadow-2xl"
                           animate={{
                             boxShadow: [
@@ -445,11 +496,10 @@ export function Navbar() {
                         setAvatarDirection(index > selectedAvatarIndex ? 1 : -1)
                         setSelectedAvatarIndex(index)
                       }}
-                      className={`rounded-full transition-all ${
-                        index === selectedAvatarIndex
-                          ? "bg-gradient-to-r from-purple-500 to-cyan-500 shadow-md shadow-purple-500/30"
-                          : "bg-neutral-300 hover:bg-neutral-400"
-                      }`}
+                      className={`rounded-full transition-all ${index === selectedAvatarIndex
+                        ? "bg-gradient-to-r from-purple-500 to-cyan-500 shadow-md shadow-purple-500/30"
+                        : "bg-neutral-300 hover:bg-neutral-400"
+                        }`}
                       animate={{
                         width: index === selectedAvatarIndex ? 20 : 8,
                         height: 8,
