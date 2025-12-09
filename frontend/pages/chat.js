@@ -42,7 +42,7 @@ export default function ChatPage() {
       
       <Navbar />
       
-      <div className="flex h-[calc(100vh-95px)] relative">
+      <div className="flex h-[calc(100vh-95px)] relative p-4 gap-4">
         {/* 左侧边栏 */}
         <ChatSidebar
           friends={friends}

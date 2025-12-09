@@ -29,9 +29,9 @@ export default function ChatSidebar({ selectedChat, onSelectChat }) {
   };
 
   return (
-    <div className="w-80 glass-dark border-r border-black/5 flex flex-col">
+    <div className="w-80 bg-white/80 backdrop-blur-xl rounded-3xl border-2 border-purple-300/40 shadow-xl shadow-purple-500/20 flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="p-4 border-b border-black/5">
+      <div className="p-4 border-b border-purple-100/50">
         <h2 className="text-xl font-bold text-neutral-800 mb-3">Chats</h2>
 
         {/* Search */}
@@ -41,14 +41,14 @@ export default function ChatSidebar({ selectedChat, onSelectChat }) {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search chats..."
-            className="pl-10"
+            className="pl-10 rounded-xl"
           />
         </div>
       </div>
 
       {/* Chat List */}
       <ScrollArea className="flex-1 glass-scroll">
-        <div className="p-2">
+        <div className="p-3">
           {/* AI Chat - Always first */}
           <ChatItem
             chat={aiChat}

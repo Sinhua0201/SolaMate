@@ -786,9 +786,9 @@ export default function ChatWindow({ selectedChat }) {
         </div>
       )}
 
-      <div className="flex-1 flex flex-col bg-transparent">
+      <div className="flex-1 flex flex-col bg-white/80 backdrop-blur-xl rounded-3xl border-2 border-purple-300/40 shadow-xl shadow-purple-500/20 overflow-hidden">
         {/* Chat Header - Glass Style */}
-        <div className="h-16 glass-dark border-b border-black/5 flex items-center px-6">
+        <div className="h-16 bg-white/60 border-b border-purple-100/50 flex items-center px-6 rounded-t-3xl">
           <div className={`
           w-10 h-10 rounded-full flex items-center justify-center mr-3 overflow-hidden shadow-lg
           ${selectedChat.type === 'ai'
@@ -885,7 +885,7 @@ export default function ChatWindow({ selectedChat }) {
         </ScrollArea>
 
         {/* Input - Glass Style */}
-        <div className="p-4 glass-dark border-t border-black/5 relative">
+        <div className="p-4 bg-white/60 border-t border-purple-100/50 relative rounded-b-3xl">
           {/* Mention suggestions */}
           {showMentions && filteredFriends.length > 0 && (
             <div className="absolute bottom-full left-4 right-4 mb-2 glass-card border border-purple-200/50 rounded-2xl shadow-xl shadow-purple-500/10 max-h-48 overflow-y-auto">
