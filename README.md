@@ -1,127 +1,74 @@
-# 🎮 SolaMate - Connect & Play
+# 🎮 SolaMate - AI Companion & Social Hub on Solana
 
-**SolaMate** is a seamless Social Web3 application built on Solana. It reimagines the social experience by removing friction—no registration, no forms, no passwords. Your wallet is your identity.
+**SolaMate** is a next-generation social Web3 application built on Solana that combines financial management with an AI-powered pet companion. It reimagines the social experience by integrating intelligent interactions, decentralized storage, and seamless payments.
 
-> **Core Philosophy**: Connect Wallet = Start Playing.
+> **Core Philosophy**: Your Wallet is Your Identity. Your Pet is Your Companion.
 
 ## ✨ Key Features
+
+### 🧠 AI-Powered Companion
+Your pet isn't just a static image—it's alive!
+- **DeepSeek Integration**: Pets have unique personalities (from "Tsundere Cat" to "Wisdom Dragon") and respond intelligently to your messages.
+- **Voice Interaction (ElevenLabs)**: Your pet speaks to you using advanced text-to-speech technology.
+- **Dynamic Mood**: Pet happiness and energy levels react to your financial habits and interactions.
+
+### 🌐 Decentralized Storage
+- **Pinata (IPFS)**: Critical application data and metadata are stored securely and permanently on the decentralized web using IPFS via Pinata.
 
 ### 🚀 Zero Friction Onboarding
 - **No Registration**: Just connect your Phantom or Solflare wallet.
 - **Privacy First**: No personal data collection. Your wallet address is your unique ID.
-- **Instant Access**: Jump straight into the action in seconds.
-
-### 🐾 Companion System (Pet)
-Grow your digital companion through social interactions and financial activities.
-- **10 Unique Pets**: From faithful Puppy to lucky Pig, each with unique XP bonuses.
-- **Leveling System**: Level 1-10. Evolve your pet by sending messages, transferring SOL, and adding friends.
-- **Interactions**: Feed and play with your pet to maintain Happiness and Energy levels.
-- **Visual Identity**: Your pet appears next to your name across the platform.
 
 ### 🤝 Social Connections
-- **Friendship (On-Chain)**: 
-    - `Send Friend Request`: Creates a Pending friendship account.
-    - `Accept Friend Request`: Updates status to Accepted.
-- **Discovery**: Add friends via wallet address.
-- **Status**: Real-time online/offline indicators (via Firebase).
-
-### 💬 Secure Chat
-- **On-chain Messaging**: Every message is a securely stored entry on the Solana blockchain.
-- **Chat Rooms**: Automatically initialized PDAs between two friends.
-- **Integrated Payments**: 
-    - Type "Send 0.5 SOL to Alice for dinner".
-    - AI Helper parses the intent -> Triggers wallet transaction.
+- **On-Chain Friendship**: Send and accept friend requests directly on the Solana blockchain.
+- **Secure Chat**: Chat with friends with integrated payment commands (e.g., "Send 0.5 SOL to Alice").
 
 ### 💰 Expense Tracking (SolaSplit)
-- **Automatic Recording**: Every P2P transfer is recorded in your `ExpenseStats` account.
-- **AI Classification**: Smart categorization of expenses based on transaction description.
-    - 🍽️ Dining
-    - 🛍️ Shopping
-    - 🎮 Entertainment
-    - ✈️ Travel
-    - 🎁 Gifts
-    - 📄 Bills
-- **Visual Analytics**: 
-    - Interactive Pie Charts for category breakdown.
-    - History filters (This Week, Month, Year).
+- **Automatic Recording**: P2P transfers are automatically recorded.
+- **AI Classification**: Smart categorization of expenses (Dining, Bills, Entertainment).
+- **Visual Analytics**: Interactive charts to track your spending habits.
 
 ## 🛠️ Technology Stack
 
 ### Frontend
-- **Framework**: [Next.js 14](https://nextjs.org/) (App Router)
-- **Styling**: [TailwindCSS](https://tailwindcss.com/) + [Shadcn UI](https://ui.shadcn.com/)
-- **State Management**: React Query + Zustand
-- **Wallet Connection**: Solana Wallet Adapter
-- **Charts**: Recharts / Chart.js
+- **Framework**: [Next.js 16](https://nextjs.org/) (App Router)
+- **Styling**: [TailwindCSS v4](https://tailwindcss.com/) + Shadcn UI
+- **AI & ML**:
+    - **DeepSeek API**: For LLM-based pet personalities and chat.
+    - **ElevenLabs API**: For high-quality AI voice synthesis.
+- **Storage**:
+    - **Pinata (IPFS)**: specific data storage.
+    - **Firebase**: For real-time notifications and caching.
+- **Web3**:
+    - **@solana/web3.js**: Blockchain interaction.
+    - **Anchor**: Client-side program interaction.
 
-### Blockchain (Solana)
+### Backend / Smart Contracts (Solana)
 - **Framework**: [Anchor](https://www.anchor-lang.com/)
 - **Language**: Rust
 - **Program ID**: `ETsJTuFTVWRPW9xoMozFQxwuEpJXN3Z9xnWxdV7rcLcz`
-- **Architecture**: Monolithic `solamate_program` containing 3 modules:
-    1.  **Social**: `UserProfile`, `Friendship`, `PetAccount`
-    2.  **Chat**: `ChatRoom`, `Message`
-    3.  **Expense**: `ExpenseStats`, `ExpenseRecord`
-
-### Backend services (Hybrid)
-- **Firebase**: 
-    - Notification system.
-    - User avatar and nickname storage (Rich metadata).
-    - Search indexing.
 
 ## 🏗️ Architecture Design
 
-### Data Flow
+### AI & Data Flow
 ```mermaid
 graph TD
-    User[User Wallet] -->|Sign Transaction| Frontend[Next.js App]
-    Frontend -->|RPC Read/Write| Solana[Solana Devnet]
-    Frontend -->|Index/Notify| Firebase[Firebase Services]
+    User[User] -->|Chat/Interact| Frontend[Next.js App]
+    Frontend -->|Message| DeepSeek[DeepSeek API]
+    Frontend -->|Text-to-Speech| Eleven[ElevenLabs API]
+    Frontend -->|Store Data| Pinata[Pinata IPFS]
+    Frontend -->|Sign Tx| Solana[Solana Blockchain]
     
-    subgraph "Solana Accounts (PDAs)"
-        Profile[User Profile]
-        Stats[Expense Stats]
-        Friend[Friendship]
-        Msg[Message PDA]
-    end
-    
-    Solana --> Profile
-    Solana --> Stats
-    Solana --> Friend
-    Solana --> Msg
-```
-
-### Account Structures (Simplified)
-
-**User Profile**
-```rust
-pub struct UserProfile {
-    pub owner: Pubkey,
-    pub pet_id: u8,
-    pub friend_count: u32,
-    pub created_at: i64,
-}
-```
-
-**Expense Record**
-```rust
-pub struct ExpenseRecord {
-    pub owner: Pubkey,
-    pub amount: u64,
-    pub category: ExpenseCategory, // Enum: Dining, Shopping...
-    pub description: String,
-    pub tx_signature: String,
-}
+    DeepSeek -->|Reply| Frontend
+    Eleven -->|Audio| Frontend
 ```
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 - Node.js (v18+)
-- Rust & Cargo (latest stable)
-- Solana CLI (v1.18+)
-- Anchor CLI (v0.29+)
-- Phantom Wallet Extension
+- Solana Wallet (Phantom/Solflare)
+- API Keys for DeepSeek, ElevenLabs, and Pinata
 
 ### Installation
 
@@ -131,34 +78,34 @@ pub struct ExpenseRecord {
    cd solamate
    ```
 
-2. **Smart Contract Setup**
+2. **Frontend Setup**
    ```bash
-   cd solana-contracts
-   # Install dependencies
-   npm install 
-   # Build contracts
-   anchor build
-   # Get your Program ID
-   solana address -k target/deploy/solamate_program-keypair.json
-   # Update declare_id! in lib.rs with your new ID if needed
-   anchor test
-   ```
-
-3. **Frontend Setup**
-   ```bash
-   cd ../frontend
+   cd frontend
    npm install
    ```
 
-4. **Environment Variables**
-   Create `.env.local` in `frontend/`:
+3. **Environment Variables**
+   Create `.env.local` in `frontend/` with the following:
    ```env
+   # Solana
    NEXT_PUBLIC_SOLANA_RPC=https://api.devnet.solana.com
-   NEXT_PUBLIC_PROGRAM_ID=<Your_Program_ID_Here>
+   NEXT_PUBLIC_PROGRAM_ID=<Your_Program_ID>
+
+   # AI Services
+   DEEPSEEK_API_KEY=your_deepseek_key
+   ELEVENLABS_API_KEY=your_elevenlabs_key
+   ELEVENLABS_VOICE_ID=your_voice_id
+
+   # IPFS / Pinata
+   PINATA_API_KEY=your_pinata_key
+   PINATA_SECRET_KEY=your_pinata_secret
+   PINATA_JWT=your_pinata_jwt
+
+   # Firebase
    NEXT_PUBLIC_FIREBASE_API_KEY=...
    ```
 
-5. **Run Application**
+4. **Run Application**
    ```bash
    npm run dev
    # Open http://localhost:3000
@@ -169,20 +116,19 @@ pub struct ExpenseRecord {
 - [x] **Phase 1: Foundation (MVP)**
     - Solana Contracts Deployment
     - Wallet Integration
-    - Basic Pet Selection
-- [ ] **Phase 2: Social & Expenses**
-    - Friends System (Requests/Accept)
-    - P2P Chat
-    - Expense Tracking Dashboard
-- [ ] **Phase 3: Pet Evolution**
-    - Leveling Logic (XP from transitions)
-    - Pet Mini-games
-    - Visual Evolution (Skins)
+    - Basic Pet System
+- [x] **Phase 2: AI Integration**
+    - DeepSeek Chat Integration
+    - ElevenLabs Voice Support
+    - Pet Personalities
+- [x] **Phase 3: Social & Storage**
+    - IPFS Storage via Pinata
+    - Friend System
+- [ ] **Phase 4: Advanced Features**
+    - Pet Evolution & Skins (NFTs)
+    - Mobile App
+    - Mainnet Launch
 
 ## 📜 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
-
----
-
-*Built with ❤️ for the Solana Renaissance Hackathon*
