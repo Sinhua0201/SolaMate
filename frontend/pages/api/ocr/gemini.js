@@ -15,7 +15,7 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'Image is required' });
         }
 
-        const GEMINI_API_KEY = 'AIzaSyA9lCwi98Pn6Auk91DDrXIfM-P1v9llDlc';
+        const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
         console.log('Calling Gemini API...');
 
