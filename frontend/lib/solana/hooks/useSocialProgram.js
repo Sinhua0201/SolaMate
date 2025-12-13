@@ -7,9 +7,9 @@ import { useState } from 'react';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { SystemProgram, PublicKey } from '@solana/web3.js';
 import { getProgram } from '../anchorSetup';
-import { 
-  getUserProfilePDA, 
-  getFriendshipPDA 
+import {
+  getUserProfilePDA,
+  getFriendshipPDA
 } from '../pdaHelpers';
 
 /**
@@ -123,11 +123,11 @@ export function useSendFriendRequest() {
 
     try {
       const program = getProgram(wallet);
-      
+
       // 检查自己的 profile 是否已初始化
       const [myProfilePDA] = getUserProfilePDA(publicKey);
       const myProfile = await program.account.userProfile.fetchNullable(myProfilePDA);
-      
+
       if (!myProfile) {
         console.log('Initializing your profile first...');
         const initTx = await program.methods
@@ -145,7 +145,7 @@ export function useSendFriendRequest() {
       const [userA, userB] = publicKey.toString() < friendPublicKey.toString()
         ? [publicKey, friendPublicKey]
         : [friendPublicKey, publicKey];
-      
+
       // 使用排序后的 keys 计算 PDA
       const [friendshipPDA] = PublicKey.findProgramAddressSync(
         [
@@ -199,20 +199,20 @@ export function useAcceptFriendRequest() {
 
     try {
       const program = getProgram(wallet);
-      
+
       // 使用排序后的 keys 计算 PDA（与合约一致）
       const [userA, userB] = publicKey.toString() < friendPublicKey.toString()
         ? [publicKey, friendPublicKey]
         : [friendPublicKey, publicKey];
-      
+
       const [friendshipPDA] = PublicKey.findProgramAddressSync(
         [Buffer.from('friendship'), userA.toBuffer(), userB.toBuffer()],
         program.programId
       );
-      
+
       // 获取 friendship 账户数据
       const friendshipAccount = await program.account.friendship.fetch(friendshipPDA);
-      
+
       // 获取 profile PDAs
       const [userAProfilePDA] = getUserProfilePDA(friendshipAccount.userA);
       const [userBProfilePDA] = getUserProfilePDA(friendshipAccount.userB);
@@ -234,12 +234,12 @@ export function useAcceptFriendRequest() {
     } catch (err) {
       console.error('Error accepting friend request:', err);
       let errorMessage = err.message;
-      
+
       // 如果是账户未初始化错误，给出清晰提示
       if (err.message && err.message.includes('AccountNotInitialized')) {
         errorMessage = '对方还没有初始化账户。请让对方先连接钱包访问网站，或者等待合约升级后自动初始化。';
       }
-      
+
       setError(errorMessage);
       return { success: false, error: errorMessage };
     } finally {
@@ -269,16 +269,18 @@ export async function getUserProfile(program, userPublicKey) {
  */
 export async function getFriendsList(program, userPublicKey) {
   try {
-    const friendships = await program.account.friendship.all([
-      {
-        memcmp: {
-          offset: 8, // 跳过 discriminator
-          bytes: userPublicKey.toBase58(),
-        },
-      },
-    ]);
+    // 获取所有 friendship，然后在客户端过滤
+    // 因为 memcmp 只能匹配一个字段，无法同时匹配 userA 和 userB
+    const allFriendships = await program.account.friendship.all();
 
-    return friendships.map(f => ({
+    // 过滤出包含当前用户的 friendship
+    const userFriendships = allFriendships.filter(f => {
+      const userAMatch = f.account.userA.toString() === userPublicKey.toString();
+      const userBMatch = f.account.userB.toString() === userPublicKey.toString();
+      return userAMatch || userBMatch;
+    });
+
+    return userFriendships.map(f => ({
       publicKey: f.publicKey,
       ...f.account,
     }));

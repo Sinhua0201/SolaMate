@@ -429,6 +429,116 @@ pub mod solamate_program {
         msg!("Event closed");
         Ok(())
     }
+
+    // ============================================================================
+    // GROUP SPLIT - 分账系统 (新功能)
+    // ============================================================================
+
+    /// 创建分账群组
+    pub fn create_group_split(
+        ctx: Context<CreateGroupSplit>,
+        title: String,
+        total_amount: u64,
+        member_count: u8,
+        ipfs_hash: String,
+        timestamp: i64,
+    ) -> Result<()> {
+        require!(title.len() > 0 && title.len() <= 64, ErrorCode::InvalidTitle);
+        require!(total_amount > 0, ErrorCode::InvalidAmount);
+        require!(member_count > 0 && member_count <= 20, ErrorCode::InvalidMemberCount);
+        require!(ipfs_hash.len() > 0 && ipfs_hash.len() <= 64, ErrorCode::InvalidIPFSHash);
+        
+        let split = &mut ctx.accounts.group_split;
+        let creator = ctx.accounts.creator.key();
+        
+        split.creator = creator;
+        split.title = title;
+        split.total_amount = total_amount;
+        split.member_count = member_count;
+        split.amount_per_person = total_amount / member_count as u64;
+        split.ipfs_hash = ipfs_hash;
+        split.created_at = timestamp;
+        split.settled_count = 0;
+        split.status = SplitStatus::Active;
+        split.bump = ctx.bumps.group_split;
+        
+        msg!("Group split created: {}", split.title);
+        Ok(())
+    }
+
+    /// 添加成员到分账群组
+    pub fn add_split_member(
+        ctx: Context<AddSplitMember>,
+        member_pubkey: Pubkey,
+    ) -> Result<()> {
+        let split = &ctx.accounts.group_split;
+        let member = &mut ctx.accounts.split_member;
+        
+        require!(
+            ctx.accounts.creator.key() == split.creator,
+            ErrorCode::Unauthorized
+        );
+        require!(
+            split.status == SplitStatus::Active,
+            ErrorCode::SplitNotActive
+        );
+        
+        member.split = split.key();
+        member.member = member_pubkey;
+        member.amount_owed = split.amount_per_person;
+        member.paid = false;
+        member.paid_at = 0;
+        member.bump = ctx.bumps.split_member;
+        
+        msg!("Member added to split: {}", member_pubkey);
+        Ok(())
+    }
+
+    /// 标记成员已付款
+    pub fn mark_split_paid(ctx: Context<MarkSplitPaid>) -> Result<()> {
+        let split = &mut ctx.accounts.group_split;
+        let member = &mut ctx.accounts.split_member;
+        
+        require!(
+            split.status == SplitStatus::Active,
+            ErrorCode::SplitNotActive
+        );
+        require!(
+            !member.paid,
+            ErrorCode::AlreadyPaid
+        );
+        require!(
+            ctx.accounts.payer.key() == member.member || ctx.accounts.payer.key() == split.creator,
+            ErrorCode::Unauthorized
+        );
+        
+        member.paid = true;
+        member.paid_at = Clock::get()?.unix_timestamp;
+        split.settled_count += 1;
+        
+        // 如果所有人都付款了，自动关闭分账
+        if split.settled_count >= split.member_count as u32 {
+            split.status = SplitStatus::Settled;
+        }
+        
+        msg!("Member marked as paid: {}", member.member);
+        Ok(())
+    }
+
+    /// 关闭分账群组
+    pub fn close_group_split(ctx: Context<CloseGroupSplit>) -> Result<()> {
+        let split = &mut ctx.accounts.group_split;
+        
+        require!(
+            ctx.accounts.creator.key() == split.creator,
+            ErrorCode::Unauthorized
+        );
+        
+        split.status = SplitStatus::Closed;
+        
+        msg!("Group split closed");
+        Ok(())
+    }
 }
 
 // ============================================================================
@@ -594,6 +704,48 @@ pub enum ApplicationStatus {
     Approved,
     Rejected,
     Paid,
+}
+
+// 新增：分账群组账户
+#[account]
+pub struct GroupSplit {
+    pub creator: Pubkey,
+    pub title: String,
+    pub total_amount: u64,
+    pub member_count: u8,
+    pub amount_per_person: u64,
+    pub ipfs_hash: String,
+    pub created_at: i64,
+    pub settled_count: u32,
+    pub status: SplitStatus,
+    pub bump: u8,
+}
+
+impl GroupSplit {
+    pub const LEN: usize = 8 + 32 + 68 + 8 + 1 + 8 + 68 + 8 + 4 + 1 + 1;
+}
+
+// 新增：分账成员账户
+#[account]
+pub struct SplitMember {
+    pub split: Pubkey,
+    pub member: Pubkey,
+    pub amount_owed: u64,
+    pub paid: bool,
+    pub paid_at: i64,
+    pub bump: u8,
+}
+
+impl SplitMember {
+    pub const LEN: usize = 8 + 32 + 32 + 8 + 1 + 8 + 1;
+}
+
+// 新增：分账状态
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq)]
+pub enum SplitStatus {
+    Active,
+    Settled,
+    Closed,
 }
 
 // ============================================================================
@@ -1042,6 +1194,108 @@ pub struct CloseEvent<'info> {
     pub creator: Signer<'info>,
 }
 
+// --- Group Split Contexts (新增) ---
+
+#[derive(Accounts)]
+#[instruction(title: String, total_amount: u64, member_count: u8, ipfs_hash: String, timestamp: i64)]
+pub struct CreateGroupSplit<'info> {
+    #[account(
+        init,
+        payer = creator,
+        space = GroupSplit::LEN,
+        seeds = [
+            b"group_split",
+            creator.key().as_ref(),
+            &timestamp.to_le_bytes()
+        ],
+        bump
+    )]
+    pub group_split: Account<'info, GroupSplit>,
+    
+    #[account(mut)]
+    pub creator: Signer<'info>,
+    
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+#[instruction(member_pubkey: Pubkey)]
+pub struct AddSplitMember<'info> {
+    #[account(
+        mut,
+        seeds = [
+            b"group_split",
+            group_split.creator.as_ref(),
+            &group_split.created_at.to_le_bytes()
+        ],
+        bump = group_split.bump
+    )]
+    pub group_split: Account<'info, GroupSplit>,
+    
+    #[account(
+        init,
+        payer = creator,
+        space = SplitMember::LEN,
+        seeds = [
+            b"split_member",
+            group_split.key().as_ref(),
+            member_pubkey.as_ref()
+        ],
+        bump
+    )]
+    pub split_member: Account<'info, SplitMember>,
+    
+    #[account(mut)]
+    pub creator: Signer<'info>,
+    
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct MarkSplitPaid<'info> {
+    #[account(
+        mut,
+        seeds = [
+            b"group_split",
+            group_split.creator.as_ref(),
+            &group_split.created_at.to_le_bytes()
+        ],
+        bump = group_split.bump
+    )]
+    pub group_split: Account<'info, GroupSplit>,
+    
+    #[account(
+        mut,
+        seeds = [
+            b"split_member",
+            group_split.key().as_ref(),
+            split_member.member.as_ref()
+        ],
+        bump = split_member.bump
+    )]
+    pub split_member: Account<'info, SplitMember>,
+    
+    #[account(mut)]
+    pub payer: Signer<'info>,
+}
+
+#[derive(Accounts)]
+pub struct CloseGroupSplit<'info> {
+    #[account(
+        mut,
+        seeds = [
+            b"group_split",
+            group_split.creator.as_ref(),
+            &group_split.created_at.to_le_bytes()
+        ],
+        bump = group_split.bump
+    )]
+    pub group_split: Account<'info, GroupSplit>,
+    
+    #[account(mut)]
+    pub creator: Signer<'info>,
+}
+
 // ============================================================================
 // ERROR CODES - 错误代码
 // ============================================================================
@@ -1096,4 +1350,14 @@ pub enum ErrorCode {
     
     #[msg("Application not approved")]
     ApplicationNotApproved,
+    
+    // 新增：分账错误
+    #[msg("Invalid member count (must be 1-20)")]
+    InvalidMemberCount,
+    
+    #[msg("Split is not active")]
+    SplitNotActive,
+    
+    #[msg("Member already paid")]
+    AlreadyPaid,
 }

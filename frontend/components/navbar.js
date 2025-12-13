@@ -38,6 +38,13 @@ const navLinks = [
   { name: "Expenses", href: "/expenses" },
 ]
 
+// Bills dropdown links
+const billsLinks = [
+  { name: "My Created Bills", href: "/group-splits", icon: "👑" },
+  { name: "Bills to Pay", href: "/my-bills", icon: "💳" },
+  { name: "Payment History", href: "/bills-history", icon: "📜" },
+]
+
 // Funding dropdown links
 const fundingLinks = [
   { name: "Create Event", href: "/test-ipfs", icon: "➕" },
@@ -68,6 +75,7 @@ export function Navbar() {
   const [isUpdating, setIsUpdating] = useState(false)
   const [updateError, setUpdateError] = useState("")
   const [showFundingDropdown, setShowFundingDropdown] = useState(false)
+  const [showBillsDropdown, setShowBillsDropdown] = useState(false)
 
   // Solana wallet hooks
   const { publicKey, connected } = useWallet()
@@ -236,13 +244,76 @@ export function Navbar() {
             </Link>
           ))}
 
+          {/* Bills Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowBillsDropdown(!showBillsDropdown)}
+              className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${billsLinks.some(link => link.href === pathname)
+                ? "text-purple-600"
+                : "text-neutral-600 hover:text-neutral-800"
+                }`}
+            >
+              Bills
+              <ChevronDown className={`h-4 w-4 transition-transform ${showBillsDropdown ? 'rotate-180' : ''}`} />
+            </button>
+
+            <AnimatePresence>
+              {showBillsDropdown && (
+                <>
+                  {/* Backdrop to close dropdown */}
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 z-40"
+                    onClick={() => setShowBillsDropdown(false)}
+                  />
+
+                  {/* Dropdown Menu */}
+                  <motion.div
+                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                    className="absolute top-full right-0 mt-3 w-60 bg-white rounded-2xl shadow-[0_10px_40px_rgb(0,0,0,0.12),0_4px_20px_rgb(124,58,237,0.15)] border-2 border-purple-100 z-50 overflow-hidden"
+                  >
+                    <div className="p-2">
+                      {billsLinks.map((link, index) => (
+                        <Link
+                          key={link.href}
+                          href={link.href}
+                          onClick={() => setShowBillsDropdown(false)}
+                          className={`flex items-center gap-3 px-4 py-3 text-sm rounded-xl transition-all duration-200 ${link.href === pathname
+                            ? 'bg-gradient-to-r from-purple-500 to-cyan-500 text-white shadow-lg shadow-purple-500/25'
+                            : 'text-neutral-700 hover:bg-purple-50/80 active:bg-purple-100'
+                            }`}
+                        >
+                          <span className="w-8 h-8 flex items-center justify-center bg-white/80 rounded-xl text-base shadow-sm border border-neutral-100">
+                            {link.icon}
+                          </span>
+                          <span className="font-medium">{link.name}</span>
+                          {link.href === pathname && (
+                            <motion.div
+                              layoutId="billsActiveIndicator"
+                              className="ml-auto w-2 h-2 bg-white rounded-full"
+                            />
+                          )}
+                        </Link>
+                      ))}
+                    </div>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+          </div>
+
           {/* Funding Dropdown */}
           <div className="relative">
             <button
               onClick={() => setShowFundingDropdown(!showFundingDropdown)}
               className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${fundingLinks.some(link => link.href === pathname)
-                  ? "text-purple-600"
-                  : "text-neutral-600 hover:text-neutral-800"
+                ? "text-purple-600"
+                : "text-neutral-600 hover:text-neutral-800"
                 }`}
             >
               Funding
@@ -276,8 +347,8 @@ export function Navbar() {
                           href={link.href}
                           onClick={() => setShowFundingDropdown(false)}
                           className={`flex items-center gap-3 px-4 py-3 text-sm rounded-xl transition-all duration-200 ${link.href === pathname
-                              ? 'bg-gradient-to-r from-purple-500 to-cyan-500 text-white shadow-lg shadow-purple-500/25'
-                              : 'text-neutral-700 hover:bg-purple-50/80 active:bg-purple-100'
+                            ? 'bg-gradient-to-r from-purple-500 to-cyan-500 text-white shadow-lg shadow-purple-500/25'
+                            : 'text-neutral-700 hover:bg-purple-50/80 active:bg-purple-100'
                             }`}
                         >
                           <span className="w-8 h-8 flex items-center justify-center bg-white/80 rounded-xl text-base shadow-sm border border-neutral-100">

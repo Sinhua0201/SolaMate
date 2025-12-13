@@ -332,7 +332,7 @@ export default function ChatWindow({ selectedChat }) {
           setInputMessage('');
           // WebSocket 会自动更新消息，但手动刷新确保立即显示
           refreshFriendMessages();
-          
+
           // 更新宠物系统的消息任务进度
           if (publicKey) {
             const walletAddr = publicKey.toString();
