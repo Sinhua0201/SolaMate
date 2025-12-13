@@ -4,6 +4,7 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { Navbar } from '@/components/navbar';
 import { SolanaConnectButton } from '@/components/solana-connect-button';
 import { useGroupSplitDetails, useMarkSplitPaid } from '@/lib/solana/hooks/useGroupSplit';
+import { getProfileFromChain } from '@/lib/solana/profileHelper';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { toast } from 'sonner';
 import { User } from 'lucide-react';
@@ -39,10 +40,10 @@ export default function GroupSplitDetailPage() {
         const profiles = {};
         for (const member of details.members) {
             try {
-                const response = await fetch(`/api/profile?walletAddress=${member.account.member.toString()}`);
-                const data = await response.json();
-                if (data.success && data.exists) {
-                    profiles[member.account.member.toString()] = data.profile;
+                const memberAddress = member.account.member.toString();
+                const result = await getProfileFromChain(memberAddress);
+                if (result.success && result.exists) {
+                    profiles[memberAddress] = result.profile;
                 }
             } catch (err) {
                 console.error('Failed to fetch profile:', err);
@@ -180,7 +181,7 @@ export default function GroupSplitDetailPage() {
 
     if (!publicKey) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+            <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
                 <Navbar />
                 <div className="container mx-auto px-4 py-20">
                     <div className="max-w-md mx-auto text-center">
@@ -195,7 +196,7 @@ export default function GroupSplitDetailPage() {
 
     if (loading || !details) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+            <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
                 <Navbar />
                 <div className="container mx-auto px-4 py-20">
                     <div className="text-center">
@@ -213,7 +214,7 @@ export default function GroupSplitDetailPage() {
     const statusKey = Object.keys(data.status)[0];
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
             <Navbar />
 
             <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -236,14 +237,14 @@ export default function GroupSplitDetailPage() {
                     </div>
 
                     <div className="grid grid-cols-3 gap-4">
-                        <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6">
+                        <div className="bg-white border border-gray-200 rounded-xl p-6">
                             <p className="text-sm text-gray-600 mb-2">Total Amount</p>
                             <p className="text-3xl font-bold text-purple-600">{totalAmount.toFixed(2)}</p>
                             <p className="text-sm text-gray-500 mt-1">SOL</p>
                         </div>
-                        <div className="bg-gradient-to-br from-pink-50 to-pink-100 rounded-xl p-6">
+                        <div className="bg-white border border-gray-200 rounded-xl p-6">
                             <p className="text-sm text-gray-600 mb-2">Per Person</p>
-                            <p className="text-3xl font-bold text-pink-600">{amountPerPerson.toFixed(2)}</p>
+                            <p className="text-3xl font-bold text-purple-600">{amountPerPerson.toFixed(2)}</p>
                             <p className="text-sm text-gray-500 mt-1">SOL</p>
                         </div>
                         <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6">
@@ -290,8 +291,8 @@ export default function GroupSplitDetailPage() {
                                 <div
                                     key={memberPubkey}
                                     className={`border-2 rounded-xl p-6 transition-all ${isCurrentUser
-                                        ? 'border-purple-300 bg-purple-50'
-                                        : 'border-gray-200 bg-gray-50'
+                                        ? 'border-purple-300 bg-white'
+                                        : 'border-gray-200 bg-white'
                                         }`}
                                 >
                                     <div className="flex items-center justify-between">
@@ -398,7 +399,7 @@ export default function GroupSplitDetailPage() {
                 )}
 
                 {ipfsData && (
-                    <div className="mt-6 bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-6 shadow-md border-2 border-purple-200">
+                    <div className="mt-6 bg-white rounded-2xl p-6 shadow-md border border-gray-200">
                         <div className="flex items-center gap-2 mb-4">
                             <span className="text-2xl">📄</span>
                             <h3 className="text-xl font-bold text-gray-800">Receipt Details</h3>

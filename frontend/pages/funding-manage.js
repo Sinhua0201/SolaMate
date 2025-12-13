@@ -3,6 +3,7 @@ import dynamic from 'next/dynamic';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { getProgram } from '@/lib/solana/anchorSetup';
 import { useApproveApplication, useDisburseFunds } from '@/lib/solana/hooks/useFundingProgram';
+import { getProfileFromChain } from '@/lib/solana/profileHelper';
 import { Navbar } from '@/components/navbar';
 import { toast } from 'sonner';
 
@@ -68,7 +69,7 @@ export default function FundingManagePage() {
             ]);
             setApplications(allApps);
 
-            // Load profiles for all applicants
+            // Load profiles for all applicants (from chain)
             const profiles = { ...applicantProfiles };
             for (const app of allApps) {
                 const applicantAddress = app.account.applicant.toString();

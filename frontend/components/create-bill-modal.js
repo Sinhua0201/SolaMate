@@ -6,6 +6,7 @@ import { X, User, Check, Upload, Camera, Users, DollarSign, FileText, Sparkles }
 import { useCreateGroupSplit } from '@/lib/solana/hooks/useGroupSplit';
 import { getFriendsList } from '@/lib/solana/hooks/useSocialProgram';
 import { getProgram } from '@/lib/solana/anchorSetup';
+import { getFriendProfile } from '@/lib/solana/profileHelper';
 import { useOCR } from '@/hooks/useOCR';
 import { useIPFS } from '@/hooks/useIPFS';
 import { toast } from 'sonner';
@@ -60,13 +61,13 @@ export function CreateBillModal({ isOpen, onClose }) {
                     const friendAddr = friend.userA.toString() === publicKey.toString()
                         ? friend.userB.toString() : friend.userA.toString();
                     try {
-                        const response = await fetch(`/api/profile?walletAddress=${friendAddr}`);
-                        const data = await response.json();
+                        // 从链上获取好友 profile
+                        const profile = await getFriendProfile(friendAddr);
                         return {
                             address: friendAddr,
-                            username: data.success && data.exists ? data.profile.username : null,
-                            displayName: data.success && data.exists ? data.profile.displayName : null,
-                            avatar: data.success && data.exists ? data.profile.avatar : null,
+                            username: profile?.username || null,
+                            displayName: profile?.displayName || null,
+                            avatar: profile?.avatar || null,
                         };
                     } catch {
                         return { address: friendAddr, username: null, displayName: null, avatar: null };
@@ -173,7 +174,7 @@ export function CreateBillModal({ isOpen, onClose }) {
                     onClick={(e) => e.stopPropagation()}
                 >
                     {/* Header */}
-                    <div className="bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 p-6 text-white relative">
+                    <div className="bg-gradient-to-r from-purple-500 to-blue-500 p-6 text-white relative">
                         <button onClick={onClose} className="absolute top-4 right-4 p-2 rounded-full bg-white/20 hover:bg-white/30">
                             <X className="h-5 w-5" />
                         </button>
@@ -246,8 +247,8 @@ export function CreateBillModal({ isOpen, onClose }) {
                                     ) : (
                                         <div className="max-h-48 overflow-y-auto space-y-2">
                                             {friends.map((friend) => (
-                                                <button key={friend.address} type="button" onClick={() => toggleFriend(friend.address)} className={`w-full p-3 rounded-xl border-2 transition-all flex items-center gap-3 ${selectedFriends.includes(friend.address) ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-gray-300'}`}>
-                                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center overflow-hidden">
+                                                <button key={friend.address} type="button" onClick={() => toggleFriend(friend.address)} className={`w-full p-3 rounded-xl border-2 transition-all flex items-center gap-3 ${selectedFriends.includes(friend.address) ? 'border-purple-500 bg-white' : 'border-gray-200 hover:border-gray-300'}`}>
+                                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center overflow-hidden">
                                                         {friend.avatar ? <img src={getAvatarPath(friend.avatar)} alt="" className="w-full h-full object-cover" /> : <User className="h-5 w-5 text-white" />}
                                                     </div>
                                                     <div className="flex-1 text-left">
@@ -267,13 +268,13 @@ export function CreateBillModal({ isOpen, onClose }) {
                             )}
                             {step === 3 && (
                                 <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
-                                    <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-5 border border-purple-200">
+                                    <div className="bg-white rounded-2xl p-5 border border-gray-200">
                                         <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2"><Sparkles className="h-5 w-5 text-purple-500" />Bill Summary</h3>
                                         <div className="space-y-3">
                                             <div className="flex justify-between"><span className="text-gray-600">Title</span><span className="font-semibold">{title}</span></div>
                                             <div className="flex justify-between"><span className="text-gray-600">Total</span><span className="font-bold text-2xl text-purple-600">{totalAmount} SOL</span></div>
                                             <div className="flex justify-between"><span className="text-gray-600">Members</span><span className="font-semibold">{selectedFriends.length}</span></div>
-                                            <div className="border-t border-purple-200 pt-3"><div className="flex justify-between"><span className="text-gray-600">Per Person</span><span className="font-bold text-xl text-pink-600">{amountPerPerson} SOL</span></div></div>
+                                            <div className="border-t border-gray-200 pt-3"><div className="flex justify-between"><span className="text-gray-600">Per Person</span><span className="font-bold text-xl text-purple-600">{amountPerPerson} SOL</span></div></div>
                                         </div>
                                     </div>
                                     <div className="flex flex-wrap gap-2">
@@ -281,7 +282,7 @@ export function CreateBillModal({ isOpen, onClose }) {
                                             const friend = friends.find(f => f.address === addr);
                                             return (
                                                 <div key={addr} className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full text-sm border shadow-sm">
-                                                    <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-pink-500" />
+                                                    <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-blue-500" />
                                                     <span className="font-medium text-gray-700">{friend?.displayName || `${addr.slice(0, 4)}...`}</span>
                                                 </div>
                                             );
@@ -296,9 +297,9 @@ export function CreateBillModal({ isOpen, onClose }) {
                     <div className="p-4 border-t bg-gray-50 flex gap-3">
                         {step > 1 && <button onClick={() => setStep(step - 1)} className="flex-1 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-100">Back</button>}
                         {step < 3 ? (
-                            <button onClick={() => setStep(step + 1)} disabled={!canProceed} className="flex-1 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-semibold hover:shadow-lg disabled:opacity-50">Continue</button>
+                            <button onClick={() => setStep(step + 1)} disabled={!canProceed} className="flex-1 py-3 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-xl font-semibold hover:shadow-lg disabled:opacity-50">Continue</button>
                         ) : (
-                            <button onClick={handleSubmit} disabled={loading} className="flex-1 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-semibold hover:shadow-lg disabled:opacity-50">
+                            <button onClick={handleSubmit} disabled={loading} className="flex-1 py-3 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-xl font-semibold hover:shadow-lg disabled:opacity-50">
                                 {loading ? <span className="flex items-center justify-center gap-2"><div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />Creating...</span> : '🎉 Create Bill'}
                             </button>
                         )}

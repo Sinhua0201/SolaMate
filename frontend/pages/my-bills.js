@@ -59,12 +59,12 @@ export default function MyBillsPage() {
 
     if (!publicKey) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
+            <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
                 <Navbar />
                 <div className="container mx-auto px-4 py-20">
                     <div className="max-w-md mx-auto text-center bg-white rounded-3xl p-8 shadow-xl">
                         <div className="text-6xl mb-4">💳</div>
-                        <h1 className="text-3xl font-bold mb-4 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                        <h1 className="text-3xl font-bold mb-4 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
                             My Bills
                         </h1>
                         <p className="text-gray-600 mb-8">Connect your wallet to view bills you need to pay</p>
@@ -76,13 +76,13 @@ export default function MyBillsPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
             <Navbar />
 
             <div className="container mx-auto px-4 py-8 max-w-5xl">
                 {/* Header */}
                 <div className="mb-8">
-                    <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                    <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
                         💳 My Bills to Pay
                     </h1>
                     <p className="text-gray-600">Manage and track your pending payments</p>
@@ -119,7 +119,7 @@ export default function MyBillsPage() {
                 </div>
 
                 {/* Filter Tabs */}
-                <div className="flex gap-3 mb-6 bg-white rounded-2xl p-2 shadow-sm">
+                <div className="flex gap-3 mb-6 bg-white rounded-2xl p-2 shadow-md border border-gray-200">
                     <button
                         onClick={() => setFilter('all')}
                         className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${filter === 'all'
@@ -156,7 +156,7 @@ export default function MyBillsPage() {
                         <p className="mt-4 text-gray-600 font-medium">Loading your bills...</p>
                     </div>
                 ) : filteredBills.length === 0 ? (
-                    <div className="text-center py-20 bg-white rounded-3xl shadow-sm">
+                    <div className="text-center py-20 bg-white rounded-3xl shadow-md border border-gray-200">
                         <div className="text-7xl mb-4">
                             {filter === 'unpaid' ? '🎉' : filter === 'paid' ? '✅' : '📭'}
                         </div>
@@ -188,7 +188,7 @@ export default function MyBillsPage() {
                                 <div
                                     key={bill.publicKey.toString()}
                                     onClick={() => router.push(`/group-split/${bill.publicKey.toString()}`)}
-                                    className={`bg-white rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all cursor-pointer border-2 ${isPaid ? 'border-green-200' : 'border-purple-200 hover:border-purple-400'
+                                    className={`bg-white rounded-2xl p-6 shadow-md hover:shadow-xl transition-all cursor-pointer border-2 ${isPaid ? 'border-green-300' : 'border-purple-300 hover:border-purple-400'
                                         }`}
                                 >
                                     <div className="flex items-start justify-between mb-4">
@@ -221,7 +221,7 @@ export default function MyBillsPage() {
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4 mb-4">
-                                        <div className={`rounded-xl p-4 ${isPaid ? 'bg-green-50' : 'bg-gradient-to-br from-purple-50 to-pink-50'}`}>
+                                        <div className={`rounded-xl p-4 border shadow-sm ${isPaid ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
                                             <p className="text-sm text-gray-600 mb-1 flex items-center gap-1">
                                                 <span>💵</span>
                                                 <span>You need to pay</span>
@@ -230,7 +230,7 @@ export default function MyBillsPage() {
                                                 {amountToPay.toFixed(4)} SOL
                                             </p>
                                         </div>
-                                        <div className="bg-blue-50 rounded-xl p-4">
+                                        <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 shadow-sm">
                                             <p className="text-sm text-gray-600 mb-1 flex items-center gap-1">
                                                 <span>👥</span>
                                                 <span>Payment progress</span>

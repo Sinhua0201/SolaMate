@@ -209,7 +209,7 @@ export default function CreateGroupSplitPage() {
 
     if (!publicKey) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+            <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
                 <Navbar />
                 <div className="container mx-auto px-4 py-20">
                     <div className="max-w-md mx-auto text-center">
@@ -223,9 +223,9 @@ export default function CreateGroupSplitPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
             {/* Animated gradient background */}
-            <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-purple-200/40 via-transparent to-transparent pointer-events-none" />
+            <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-gray-200/40 via-transparent to-transparent pointer-events-none" />
             <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_bottom_right,_var(--tw-gradient-stops))] from-cyan-200/30 via-transparent to-transparent pointer-events-none" />
 
             <Navbar />
@@ -241,7 +241,7 @@ export default function CreateGroupSplitPage() {
 
                 <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-[0_4px_20px_rgb(0,0,0,0.08),0_8px_40px_rgb(124,58,237,0.12)] border-2 border-purple-100 p-8">
                     <h1 className="text-3xl font-bold mb-2">
-                        <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                        <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
                             创建分账账单
                         </span>
                     </h1>
@@ -299,7 +299,7 @@ export default function CreateGroupSplitPage() {
                             )}
 
                             {ocrResult && (
-                                <div className="mt-4 bg-purple-50 rounded-2xl p-4 border border-purple-200">
+                                <div className="mt-4 bg-gray-50 rounded-2xl p-4 border border-gray-200">
                                     <div className="flex items-center justify-between mb-2">
                                         <p className="font-semibold text-gray-800">✨ 识别结果</p>
                                         <button
@@ -399,7 +399,7 @@ export default function CreateGroupSplitPage() {
                                                 type="button"
                                                 onClick={() => toggleFriend(friend.address)}
                                                 className={`w-full p-4 rounded-2xl border-2 transition-all ${isSelected
-                                                    ? 'border-purple-500 bg-purple-50 shadow-md'
+                                                    ? 'border-purple-500 bg-white shadow-md'
                                                     : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                                                     }`}
                                             >
@@ -456,7 +456,7 @@ export default function CreateGroupSplitPage() {
 
                         {/* 已选成员 */}
                         {selectedFriends.length > 0 && (
-                            <div className="bg-gradient-to-r from-purple-50 via-pink-50 to-purple-50 rounded-2xl p-6 border-2 border-purple-200">
+                            <div className="bg-white rounded-2xl p-6 border-2 border-gray-200">
                                 <div className="flex items-center justify-between mb-4">
                                     <p className="font-semibold text-gray-800">已选成员 ({selectedFriends.length})</p>
                                     <p className="text-sm text-gray-600">
@@ -503,7 +503,7 @@ export default function CreateGroupSplitPage() {
                         <button
                             type="submit"
                             disabled={loading || !title || !totalAmount || selectedFriends.length === 0}
-                            className="w-full py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-2xl font-semibold hover:shadow-lg hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                            className="w-full py-4 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-2xl font-semibold hover:shadow-lg hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                         >
                             {loading ? (
                                 <span className="flex items-center justify-center gap-2">

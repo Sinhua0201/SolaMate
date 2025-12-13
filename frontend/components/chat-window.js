@@ -1,14 +1,21 @@
 import { useState, useEffect, useRef } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { Send, Bot, User, Loader2, Mic, MicOff } from 'lucide-react';
+import { Send, Bot, User, Loader2, Mic, MicOff, X, Calendar, FileText, DollarSign } from 'lucide-react';
+import { CreateBillModal } from '@/components/create-bill-modal';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useSendMessage, useInitializeChatRoom } from '@/lib/solana/hooks/useChatProgram';
 import { useRecordExpense, ExpenseCategory } from '@/lib/solana/hooks/useExpenseProgram';
 import { useRealtimeChatWebSocket } from '@/hooks/useRealtimeChatWebSocket';
+import { useCreateFundingEvent } from '@/lib/solana/hooks/useFundingProgram';
+import { useCreateGroupSplit } from '@/lib/solana/hooks/useGroupSplit';
+import { useIPFS } from '@/hooks/useIPFS';
+import { LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { updateTaskProgress, addXP, getPetData } from '@/lib/petSystem';
+import { getFriendProfile } from '@/lib/solana/profileHelper';
 
 // Helper to get avatar path from filename
 const getAvatarPath = (name) => name ? `/avatar/${name}` : null;
@@ -58,6 +65,20 @@ export default function ChatWindow({ selectedChat }) {
   const { initializeChatRoom } = useInitializeChatRoom();
   const { recordExpense } = useRecordExpense();
 
+  // Funding & Bill hooks
+  const { createEvent, isLoading: isCreatingFund } = useCreateFundingEvent();
+  const { createGroupSplit, loading: isCreatingBill } = useCreateGroupSplit();
+  const { uploadJSON } = useIPFS();
+
+  // Create Fund Modal state
+  const [showFundModal, setShowFundModal] = useState(false);
+  const [fundFormData, setFundFormData] = useState({ title: '', description: '', amount: '', deadline: '' });
+
+  // Create Bill Modal state
+  const [showBillModal, setShowBillModal] = useState(false);
+  const [billFormData, setBillFormData] = useState({ title: '', amount: '' });
+  const [selectedBillFriends, setSelectedBillFriends] = useState([]);
+
   useEffect(() => {
     if (selectedChat) {
       loadMessages();
@@ -88,14 +109,15 @@ export default function ChatWindow({ selectedChat }) {
 
           if (isUserA || isUserB) {
             const friendAddr = isUserA ? userB.toString() : userA.toString();
-            const response = await fetch(`/api/profile?walletAddress=${friendAddr}`);
-            const data = await response.json();
+            // 从链上获取好友 profile
+            const friendProfile = await getFriendProfile(friendAddr);
 
-            if (data.success && data.exists) {
+            if (friendProfile) {
               acceptedFriends.push({
                 address: friendAddr,
-                username: data.profile.username,
-                displayName: data.profile.displayName,
+                username: friendProfile.username,
+                displayName: friendProfile.displayName,
+                avatar: friendProfile.avatar,
               });
             }
           }
@@ -287,10 +309,38 @@ export default function ChatWindow({ selectedChat }) {
           const lowerInput = userInput.toLowerCase();
 
           // 简单的关键词匹配回复
-          if (lowerInput.includes('hello') || lowerInput.includes('hi') || lowerInput.includes('hey')) {
-            aiResponse = 'Hello! 👋 I\'m your SolaMate AI assistant. I can help you:\n\n• Send SOL to friends (try: "send sol 0.1 to @username")\n• Chat and answer questions\n• Manage your crypto activities\n\nHow can I help you today?';
-          } else if (lowerInput.includes('help') || lowerInput.includes('command')) {
-            aiResponse = '🤖 Available Commands:\n\n💰 Transfer SOL:\n"send sol [amount] to @username"\nExample: send sol 0.1 to @alice\n\n📊 More features coming soon:\n• Check balance\n• View transaction history\n• Expense tracking\n\nWhat would you like to do?';
+          if (lowerInput.includes('hello') || lowerInput.includes('hi') || lowerInput.includes('hey') || lowerInput.includes('你好')) {
+            aiResponse = 'Hello! 👋 I\'m your SolaMate AI assistant. I can help you:\n\n💸 Send SOL: "send sol 0.1 to @username"\n🎯 Create Fund: "create fund"\n📝 Split Bill: "create bill @alice @bob 2 SOL dinner"\n\nWhat would you like to do?';
+          } else if (lowerInput.includes('help') || lowerInput.includes('command') || lowerInput.includes('帮助')) {
+            aiResponse = '🤖 Available Commands:\n\n💸 Transfer SOL:\n"send sol [amount] to @username"\n\n🎯 Create Funding Event:\n"create fund"\n\n📝 Split Bill:\n"create bill @user1 @user2 [amount] SOL [reason]"\n\nExample: create bill @alice @bob 2 SOL dinner';
+          } else if (lowerInput.includes('create fund') || lowerInput.includes('创建基金') || lowerInput.includes('new fund')) {
+            // 显示带确认按钮的消息
+            const fundConfirmMsg = {
+              id: Date.now() + 1,
+              content: '🎯 Create Funding Event\n\nYou want to create a funding pool that others can apply to.\n\nClick "Create Fund" to set up your event!',
+              sender: 'ai',
+              timestamp: new Date().toISOString(),
+              isMine: false,
+              showCreateFundButton: true,
+            };
+            const updatedMessages = [...aiMsgs, fundConfirmMsg];
+            setAiMessages(updatedMessages);
+            localStorage.setItem('ai_messages', JSON.stringify(updatedMessages));
+            return; // 提前返回，不走下面的普通回复逻辑
+          } else if (lowerInput.includes('create bill') || lowerInput.includes('split bill') || lowerInput.includes('分账') || lowerInput.includes('aa制') || lowerInput.includes('平分')) {
+            // 显示带确认按钮的消息
+            const billConfirmMsg = {
+              id: Date.now() + 1,
+              content: '📝 Split Bill\n\nYou want to split expenses with friends.\n\nClick "Create Bill" to select friends and set the amount!',
+              sender: 'ai',
+              timestamp: new Date().toISOString(),
+              isMine: false,
+              showCreateBillButton: true,
+            };
+            const updatedMessages = [...aiMsgs, billConfirmMsg];
+            setAiMessages(updatedMessages);
+            localStorage.setItem('ai_messages', JSON.stringify(updatedMessages));
+            return; // 提前返回
           } else if (lowerInput.includes('balance') || lowerInput.includes('how much')) {
             aiResponse = '💰 Balance check feature coming soon!\n\nFor now, you can check your balance in your wallet or on Solana Explorer.';
           } else if (lowerInput.includes('friend') || lowerInput.includes('add')) {
@@ -301,14 +351,7 @@ export default function ChatWindow({ selectedChat }) {
             aiResponse = 'Goodbye! 👋 Feel free to come back anytime you need help!';
           } else {
             // 默认回复
-            const responses = [
-              'I\'m here to help! You can ask me about sending SOL, managing friends, or just chat. 😊',
-              'Interesting! I\'m still learning, but I can help you send SOL to your friends. Try: "send sol 0.1 to @username"',
-              'That\'s cool! By the way, did you know you can send SOL to friends just by chatting with me? Try it out!',
-              'I understand! Let me know if you need help with anything. I\'m great at sending SOL to your friends! 💰',
-              'Thanks for chatting! I can help you transfer SOL, manage friends, and more. What would you like to do?',
-            ];
-            aiResponse = responses[Math.floor(Math.random() * responses.length)];
+            aiResponse = 'I can help you with:\n\n💸 "send sol 0.1 to @username" - Transfer SOL\n🎯 "create fund" - Start a funding event\n📝 "create bill @alice @bob 2 SOL" - Split expenses\n\nTry one of these commands! 😊';
           }
 
           const aiReply = {
@@ -631,6 +674,93 @@ export default function ChatWindow({ selectedChat }) {
     setPaymentCategory('other');
   };
 
+  // 创建 Funding Event
+  const handleCreateFund = async () => {
+    if (!fundFormData.title || !fundFormData.amount || !fundFormData.deadline) {
+      toast.error('Please fill all required fields');
+      return;
+    }
+    try {
+      const eventData = { title: fundFormData.title, description: fundFormData.description, createdAt: Date.now() };
+      const ipfsResult = await uploadJSON(eventData, { name: `event-${fundFormData.title}.json` });
+      if (!ipfsResult.success) throw new Error('Failed to upload to IPFS');
+
+      const amount = Math.floor(parseFloat(fundFormData.amount) * LAMPORTS_PER_SOL);
+      const deadline = Math.floor(new Date(fundFormData.deadline).getTime() / 1000);
+      const result = await createEvent(fundFormData.title, amount, deadline, ipfsResult.ipfsHash);
+
+      if (result.success) {
+        toast.success('🎉 Funding event created!');
+        setShowFundModal(false);
+        setFundFormData({ title: '', description: '', amount: '', deadline: '' });
+        
+        // 添加成功消息到聊天
+        const successMsg = {
+          id: Date.now(),
+          content: `✅ Funding Event Created!\n\n📋 ${fundFormData.title}\n💰 ${fundFormData.amount} SOL\n📅 Deadline: ${fundFormData.deadline}\n\nGo to Funding > Manage Events to view applications.`,
+          sender: 'ai',
+          timestamp: new Date().toISOString(),
+          isMine: false,
+        };
+        setAiMessages(prev => {
+          const updated = [...prev, successMsg];
+          localStorage.setItem('ai_messages', JSON.stringify(updated));
+          return updated;
+        });
+      } else {
+        toast.error('Failed: ' + result.error);
+      }
+    } catch (error) {
+      toast.error('Failed: ' + error.message);
+    }
+  };
+
+  // 创建 Bill
+  const handleCreateBill = async () => {
+    if (!billFormData.title || !billFormData.amount || selectedBillFriends.length === 0) {
+      toast.error('Please fill title, amount and select at least one friend');
+      return;
+    }
+    try {
+      toast.info('Creating bill...');
+      const result = await createGroupSplit({
+        title: billFormData.title,
+        totalAmount: parseFloat(billFormData.amount),
+        members: selectedBillFriends.map(f => f.address),
+        ipfsHash: 'QmDefault',
+      });
+      
+      toast.success('📝 Bill created!');
+      setShowBillModal(false);
+      setBillFormData({ title: '', amount: '' });
+      setSelectedBillFriends([]);
+      
+      const perPerson = (parseFloat(billFormData.amount) / selectedBillFriends.length).toFixed(4);
+      const successMsg = {
+        id: Date.now(),
+        content: `✅ Bill Created!\n\n📋 ${billFormData.title}\n💰 ${billFormData.amount} SOL\n👥 ${selectedBillFriends.map(f => '@' + f.username).join(', ')}\n💵 Per person: ${perPerson} SOL\n\nView it in Bills > My Created Bills`,
+        sender: 'ai',
+        timestamp: new Date().toISOString(),
+        isMine: false,
+      };
+      setAiMessages(prev => {
+        const updated = [...prev, successMsg];
+        localStorage.setItem('ai_messages', JSON.stringify(updated));
+        return updated;
+      });
+    } catch (error) {
+      toast.error('Failed: ' + error.message);
+    }
+  };
+
+  const toggleBillFriend = (friend) => {
+    setSelectedBillFriends(prev => 
+      prev.find(f => f.address === friend.address)
+        ? prev.filter(f => f.address !== friend.address)
+        : [...prev, friend]
+    );
+  };
+
   const executeTransfer = async (amount, friend, reason = 'Transfer', category = 'other') => {
     try {
       const { Connection, PublicKey, SystemProgram, Transaction, LAMPORTS_PER_SOL } = await import('@solana/web3.js');
@@ -911,10 +1041,12 @@ export default function ChatWindow({ selectedChat }) {
                   onConfirmTransfer={executeTransfer}
                   onPaymentRequestResponse={handlePaymentRequestResponse}
                   onCategorySelect={handleCategorySelect}
+                  onOpenFundModal={() => setShowFundModal(true)}
+                  onOpenBillModal={() => setShowBillModal(true)}
                   onCancelTransfer={() => {
                     const cancelMsg = {
                       id: Date.now(),
-                      content: '❌ Transfer cancelled.',
+                      content: '❌ Cancelled.',
                       sender: 'ai',
                       timestamp: new Date().toISOString(),
                       isMine: false,
@@ -942,8 +1074,16 @@ export default function ChatWindow({ selectedChat }) {
                   onClick={() => selectMention(friend.username)}
                   className="w-full flex items-center gap-3 p-3 hover:bg-purple-50 transition-colors text-left first:rounded-t-2xl last:rounded-b-2xl"
                 >
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-green-500 flex items-center justify-center flex-shrink-0 shadow-md">
-                    <User className="h-4 w-4 text-white" />
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-green-500 flex items-center justify-center flex-shrink-0 shadow-md overflow-hidden">
+                    {friend.avatar ? (
+                      <img 
+                        src={getAvatarPath(friend.avatar)} 
+                        alt={friend.displayName}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <User className="h-4 w-4 text-white" />
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-neutral-800">{friend.displayName}</p>
@@ -1064,11 +1204,71 @@ export default function ChatWindow({ selectedChat }) {
           </div>
         </div>
       </div>
+
+      {/* Create Fund Modal */}
+      <AnimatePresence>
+        {showFundModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+            onClick={() => setShowFundModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-3xl max-w-md w-full shadow-2xl overflow-hidden"
+            >
+              <div className="bg-gradient-to-r from-purple-500 to-cyan-500 p-5 text-white">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h2 className="text-xl font-bold">Create Funding Event</h2>
+                    <p className="text-white/80 text-sm">Set up a new funding pool</p>
+                  </div>
+                  <button onClick={() => setShowFundModal(false)} className="p-2 hover:bg-white/20 rounded-full"><X className="h-5 w-5" /></button>
+                </div>
+              </div>
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2"><FileText className="h-4 w-4 text-purple-500" />Event Title</label>
+                  <input value={fundFormData.title} onChange={(e) => setFundFormData({...fundFormData, title: e.target.value})} placeholder="e.g., Community Scholarship" maxLength={64} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 transition-all outline-none" />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-2 block">Description</label>
+                  <textarea value={fundFormData.description} onChange={(e) => setFundFormData({...fundFormData, description: e.target.value})} placeholder="Describe the purpose..." rows={2} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 transition-all outline-none resize-none" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2"><DollarSign className="h-4 w-4 text-purple-500" />Amount (SOL)</label>
+                    <input type="number" step="0.01" value={fundFormData.amount} onChange={(e) => setFundFormData({...fundFormData, amount: e.target.value})} placeholder="0.00" className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 transition-all outline-none" />
+                  </div>
+                  <div>
+                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2"><Calendar className="h-4 w-4 text-purple-500" />Deadline</label>
+                    <input type="date" value={fundFormData.deadline} onChange={(e) => setFundFormData({...fundFormData, deadline: e.target.value})} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 transition-all outline-none" />
+                  </div>
+                </div>
+                <div className="flex gap-3 pt-2">
+                  <button onClick={() => setShowFundModal(false)} className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl font-medium text-gray-700">Cancel</button>
+                  <button onClick={handleCreateFund} disabled={isCreatingFund} className="flex-1 py-3 bg-gradient-to-r from-purple-500 to-cyan-500 text-white rounded-xl font-medium disabled:opacity-50">
+                    {isCreatingFund ? 'Creating...' : 'Create Event'}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Create Bill Modal - using the full-featured CreateBillModal component */}
+      <CreateBillModal isOpen={showBillModal} onClose={() => setShowBillModal(false)} />
     </>
   );
 }
 
-function MessageBubble({ message, isAI, friendAvatar, onConfirmTransfer, onCancelTransfer, onPaymentRequestResponse, onCategorySelect }) {
+function MessageBubble({ message, isAI, friendAvatar, onConfirmTransfer, onCancelTransfer, onPaymentRequestResponse, onCategorySelect, onOpenFundModal, onOpenBillModal }) {
   const isMine = message.isMine;
   const time = new Date(message.timestamp).toLocaleTimeString('en-US', {
     hour: '2-digit',
@@ -1153,6 +1353,48 @@ function MessageBubble({ message, isAI, friendAvatar, onConfirmTransfer, onCance
                   className="bg-green-500 hover:bg-green-600 text-white rounded-xl shadow-md shadow-green-500/30"
                 >
                   ✓ Confirm Transfer
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onCancelTransfer()}
+                  className="bg-white/80 hover:bg-neutral-100 border-neutral-300 text-neutral-700 rounded-xl"
+                >
+                  ✗ Cancel
+                </Button>
+              </div>
+            )}
+
+            {/* Create Fund Button */}
+            {message.showCreateFundButton && (
+              <div className="flex gap-2 mt-3">
+                <Button
+                  size="sm"
+                  onClick={onOpenFundModal}
+                  className="bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600 text-white rounded-xl shadow-md shadow-purple-500/30"
+                >
+                  🎯 Create Fund
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onCancelTransfer()}
+                  className="bg-white/80 hover:bg-neutral-100 border-neutral-300 text-neutral-700 rounded-xl"
+                >
+                  ✗ Cancel
+                </Button>
+              </div>
+            )}
+
+            {/* Create Bill Button */}
+            {message.showCreateBillButton && (
+              <div className="flex gap-2 mt-3">
+                <Button
+                  size="sm"
+                  onClick={onOpenBillModal}
+                  className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-xl shadow-md shadow-blue-500/30"
+                >
+                  📝 Create Bill
                 </Button>
                 <Button
                   size="sm"

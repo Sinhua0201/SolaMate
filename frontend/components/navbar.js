@@ -49,7 +49,6 @@ const billsLinks = [
 const fundingLinks = [
   { name: "Create Event", href: "/test-ipfs", icon: "➕" },
   { name: "Apply for Funding", href: "/funding-apply", icon: "📝" },
-  { name: "Manage Events", href: "/funding-manage", icon: "⚙️" },
   { name: "My Applications", href: "/my-applications", icon: "📋" },
 ]
 

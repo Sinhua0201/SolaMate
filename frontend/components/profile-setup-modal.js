@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/dialog"
 import { ChevronLeft, ChevronRight, Check } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
+import { useInitializeProfile } from "@/lib/solana/hooks/useSocialProgram"
+import { toast } from "sonner"
 
 // 10 preset avatars - store only the filename
 const AVATAR_NAMES = Array.from({ length: 10 }, (_, i) => `${i + 1}.png`)
@@ -22,9 +24,11 @@ const getAvatarPath = (name) => name ? `/avatar/${name}` : null
  * Profile Setup Modal
  * Shows on first wallet connection to collect username and avatar
  * Features a rotating avatar carousel for selection
+ * Now saves to Solana blockchain instead of Firebase
  */
 export function ProfileSetupModal({ isOpen, onClose, onProfileCreated }) {
   const { publicKey } = useWallet()
+  const { initializeProfile, isLoading: isInitializing } = useInitializeProfile()
   const [username, setUsername] = useState("")
   const [selectedAvatarIndex, setSelectedAvatarIndex] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -45,7 +49,7 @@ export function ProfileSetupModal({ isOpen, onClose, onProfileCreated }) {
     setSelectedAvatarIndex((prev) => (prev + 1) % AVATAR_NAMES.length)
   }
 
-  // Handle form submission
+  // Handle form submission - now saves to Solana blockchain
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError("")
@@ -64,23 +68,27 @@ export function ProfileSetupModal({ isOpen, onClose, onProfileCreated }) {
     setIsSubmitting(true)
 
     try {
-      const response = await fetch('/api/profile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const avatar = AVATAR_NAMES[selectedAvatarIndex]
+      const result = await initializeProfile(username, avatar)
+
+      if (result.success) {
+        // 创建 profile 对象返回给父组件
+        const profile = {
           walletAddress,
-          username,
-          avatar: AVATAR_NAMES[selectedAvatarIndex], // Save only filename like "1.png"
-        }),
-      })
-
-      const data = await response.json()
-
-      if (data.success) {
-        onProfileCreated(data.profile)
+          username: username.toLowerCase(),
+          displayName: username,
+          avatar,
+        }
+        toast.success('🎉 Profile created!', {
+          description: `Welcome to SolaMate, ${username}!`,
+        })
+        onProfileCreated(profile)
         onClose()
       } else {
-        setError(data.error || 'Failed to create profile')
+        setError(result.error || 'Failed to create profile on blockchain')
+        toast.error('Failed to create profile', {
+          description: result.error || 'Please try again',
+        })
       }
     } catch (error) {
       console.error('Profile creation error:', error)
@@ -255,11 +263,11 @@ export function ProfileSetupModal({ isOpen, onClose, onProfileCreated }) {
           {/* Confirm Button */}
           <Button
             type="submit"
-            disabled={isSubmitting || !username.trim()}
+            disabled={isSubmitting || isInitializing || !username.trim()}
             className="w-full bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600 text-white rounded-xl shadow-lg shadow-purple-500/20 ios-transition"
           >
             <Check className="h-4 w-4 mr-2" />
-            {isSubmitting ? "Creating Profile..." : "Confirm"}
+            {isSubmitting || isInitializing ? "Creating Profile on Chain..." : "Confirm"}
           </Button>
         </form>
       </DialogContent>

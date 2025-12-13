@@ -6,7 +6,7 @@
 import { PublicKey } from '@solana/web3.js';
 
 // 主合约 Program ID (包含所有功能)
-export const SOLAMATE_PROGRAM_ID_STRING = 'ETsJTuFTVWRPW9xoMozFQxwuEpJXN3Z9xnWxdV7rcLcz';
+export const SOLAMATE_PROGRAM_ID_STRING = 'H5Zs6GVUnjZSTuMwJzBTRRtvFrS1gfSNYtVWzFaxCNiD';
 
 // 延迟初始化 PublicKey (避免 SSR 问题)
 export const getSolamateProgramId = () => {

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { getProgram } from '@/lib/solana/anchorSetup';
 import { useIdleDetection } from './useIdleDetection';
+import { getFriendProfile } from '@/lib/solana/profileHelper';
 
 // 全局缓存，在所有组件间共享
 let globalFriendsCache = null;
@@ -71,19 +72,10 @@ export function useFriendsCache() {
 
                 const friendAddr = isUserA ? userB.toString() : userA.toString();
 
-                // 获取好友资料
+                // 获取好友资料（从链上）
                 let friendProfile = null;
                 try {
-                    const response = await fetch(`/api/profile?walletAddress=${friendAddr}`);
-                    const data = await response.json();
-                    if (data.success && data.exists) {
-                        friendProfile = {
-                            address: friendAddr,
-                            username: data.profile.username,
-                            displayName: data.profile.displayName,
-                            avatar: data.profile.avatar || null, // 添加 avatar
-                        };
-                    }
+                    friendProfile = await getFriendProfile(friendAddr);
                 } catch (err) {
                     console.error('Error fetching friend profile:', err);
                 }

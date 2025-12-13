@@ -51,7 +51,7 @@ export default function GroupSplitsPage() {
 
     if (!publicKey) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+            <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
                 <Navbar />
                 <div className="container mx-auto px-4 py-20">
                     <div className="max-w-md mx-auto text-center">
@@ -65,7 +65,7 @@ export default function GroupSplitsPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
             <Navbar />
 
             <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -73,18 +73,18 @@ export default function GroupSplitsPage() {
                     <h1 className="text-3xl font-bold">My Bills</h1>
                     <button
                         onClick={() => setIsCreateBillOpen(true)}
-                        className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:shadow-lg transition-all"
+                        className="px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-xl hover:shadow-lg transition-all"
                     >
                         + Create New Bill
                     </button>
                 </div>
 
                 {/* Tabs */}
-                <div className="flex gap-2 mb-6 bg-white rounded-2xl p-2 shadow-sm">
+                <div className="flex gap-2 mb-6 bg-white rounded-2xl p-2 shadow-md border border-gray-200">
                     <button
                         onClick={() => setActiveTab('created')}
                         className={`flex-1 py-3 rounded-xl font-semibold transition-all ${activeTab === 'created'
-                            ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md'
+                            ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-md'
                             : 'text-gray-600 hover:bg-gray-50'
                             }`}
                     >
@@ -93,7 +93,7 @@ export default function GroupSplitsPage() {
                     <button
                         onClick={() => setActiveTab('toPay')}
                         className={`flex-1 py-3 rounded-xl font-semibold transition-all ${activeTab === 'toPay'
-                            ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md'
+                            ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-md'
                             : 'text-gray-600 hover:bg-gray-50'
                             }`}
                     >
@@ -120,7 +120,7 @@ export default function GroupSplitsPage() {
                         {activeTab === 'created' && (
                             <button
                                 onClick={() => setIsCreateBillOpen(true)}
-                                className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:shadow-lg transition-all"
+                                className="px-6 py-3 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-xl hover:shadow-lg transition-all"
                             >
                                 Create Bill
                             </button>
@@ -137,7 +137,7 @@ export default function GroupSplitsPage() {
                                 <div
                                     key={split.publicKey.toString()}
                                     onClick={() => router.push(`/group-split/${split.publicKey.toString()}`)}
-                                    className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition-all cursor-pointer border border-gray-100"
+                                    className="bg-white rounded-2xl p-6 shadow-md hover:shadow-lg transition-all cursor-pointer border border-gray-200"
                                 >
                                     <div className="flex items-start justify-between mb-4">
                                         <div className="flex-1">
@@ -150,15 +150,15 @@ export default function GroupSplitsPage() {
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4 mb-4">
-                                        <div className="bg-purple-50 rounded-xl p-4">
+                                        <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 shadow-sm">
                                             <p className="text-sm text-gray-600 mb-1">Total Amount</p>
                                             <p className="text-2xl font-bold text-purple-600">
                                                 {(split.account.totalAmount.toNumber() / LAMPORTS_PER_SOL).toFixed(2)} SOL
                                             </p>
                                         </div>
-                                        <div className="bg-pink-50 rounded-xl p-4">
+                                        <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 shadow-sm">
                                             <p className="text-sm text-gray-600 mb-1">{isCreator ? 'Per Person' : 'You Need to Pay'}</p>
-                                            <p className="text-2xl font-bold text-pink-600">
+                                            <p className="text-2xl font-bold text-blue-600">
                                                 {amountPerPerson.toFixed(4)} SOL
                                             </p>
                                         </div>
@@ -171,7 +171,7 @@ export default function GroupSplitsPage() {
                                             </span>
                                             <div className="flex-1 bg-gray-200 rounded-full h-2 w-32">
                                                 <div
-                                                    className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all"
+                                                    className="bg-gradient-to-r from-purple-500 to-blue-500 h-2 rounded-full transition-all"
                                                     style={{
                                                         width: `${(split.account.settledCount / split.account.memberCount) * 100}%`,
                                                     }}

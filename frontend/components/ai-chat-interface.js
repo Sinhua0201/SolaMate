@@ -1,34 +1,52 @@
 import { useState, useRef, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
+import { useRouter } from 'next/router';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { VoiceInput } from '@/components/voice-input';
-import { Send, Bot, User, Sparkles, Loader2 } from 'lucide-react';
+import { Send, Bot, User, Sparkles, X, Calendar, FileText, DollarSign } from 'lucide-react';
 import { useRecordExpense, ExpenseCategory } from '@/lib/solana/hooks/useExpenseProgram';
+import { useCreateFundingEvent } from '@/lib/solana/hooks/useFundingProgram';
+import { useCreateGroupSplit } from '@/lib/solana/hooks/useGroupSplit';
+import { useIPFS } from '@/hooks/useIPFS';
+import { LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
+
+const getAvatarPath = (name) => name ? `/avatar/${name}` : null;
 
 /**
  * AI Chat Interface Component
- * AI 聊天界面 - 支持文字和语音输入 + 实际转账功能
+ * AI 聊天界面 - 支持文字和语音输入 + 转账 + 创建 Fund + 创建 Bill
  */
 export function AIChatInterface({ onTransferRequest }) {
+    const router = useRouter();
     const { publicKey, connected, sendTransaction: walletSendTransaction } = useWallet();
     const [messages, setMessages] = useState([
         {
             role: 'assistant',
-            content: 'Hi! I\'m your AI transfer assistant. You can say things like:\n• "Send 2 SOL to Alice for coffee"\n• "Transfer 0.5 SOL to Bob"\n• "Pay Charlie 1 SOL for lunch"',
+            content: 'Hi! I\'m your AI assistant. You can:\n• "Send 2 SOL to @Alice for coffee"\n• "Create fund" - Start a funding event\n• "Create bill @Alice @Bob 1.5 SOL dinner" - Split expenses',
             timestamp: Date.now(),
         }
     ]);
     const [input, setInput] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
     const [friends, setFriends] = useState([]);
-    const [selectedCategory, setSelectedCategory] = useState(null);
     const [showMentions, setShowMentions] = useState(false);
     const [mentionSearch, setMentionSearch] = useState('');
     const messagesEndRef = useRef(null);
     const inputRef = useRef(null);
     const { recordExpense } = useRecordExpense();
+
+    // Funding & Bill hooks
+    const { createEvent, isLoading: isCreatingFund } = useCreateFundingEvent();
+    const { createGroupSplit, loading: isCreatingBill } = useCreateGroupSplit();
+    const { uploadJSON } = useIPFS();
+
+    // Modal states
+    const [showFundModal, setShowFundModal] = useState(false);
+    const [fundFormData, setFundFormData] = useState({ title: '', description: '', amount: '', deadline: '' });
 
     const EXPENSE_CATEGORIES = [
         { id: 'dining', name: 'Dining', emoji: '🍽️' },
@@ -92,9 +110,30 @@ export function AIChatInterface({ onTransferRequest }) {
         }
     };
 
-    // 解析转账指令
-    const parseTransferCommand = (text) => {
-        // 匹配模式: "send/transfer/pay [amount] SOL to [recipient] [for reason]"
+    // 解析命令 - 支持转账、创建基金、创建账单
+    const parseCommand = (text) => {
+        const lowerText = text.toLowerCase().trim();
+
+        // 检测 create fund / create funding event
+        if (lowerText.includes('create fund') || lowerText.includes('创建基金') || lowerText.includes('new fund')) {
+            return { type: 'create-fund', isValid: true };
+        }
+
+        // 检测 create bill with @mentions
+        if (lowerText.includes('create bill') || lowerText.includes('split') || lowerText.includes('分账') || lowerText.includes('aa') || lowerText.includes('平分')) {
+            const mentionPattern = /@(\w+)/g;
+            const mentions = [];
+            let match;
+            while ((match = mentionPattern.exec(text)) !== null) {
+                mentions.push(match[1]);
+            }
+            const amountMatch = text.match(/(\d+\.?\d*)\s*(?:sol)?/i);
+            const amount = amountMatch ? parseFloat(amountMatch[1]) : null;
+            let reason = text.replace(/(?:create bill|split|分账|aa|平分)/gi, '').replace(/@\w+/g, '').replace(/\d+\.?\d*\s*(?:sol)?/gi, '').trim() || 'Split Bill';
+            return { type: 'create-bill', isValid: true, mentions, amount, reason };
+        }
+
+        // 检测转账命令
         const patterns = [
             /(?:send|transfer|pay)\s+(\d+\.?\d*)\s+sol\s+to\s+@?(\w+)(?:\s+for\s+(.+))?/i,
             /(?:give|送|转)\s+@?(\w+)\s+(\d+\.?\d*)\s+sol(?:\s+(.+))?/i,
@@ -103,16 +142,7 @@ export function AIChatInterface({ onTransferRequest }) {
         for (const pattern of patterns) {
             const match = text.match(pattern);
             if (match) {
-                const result = {
-                    amount: parseFloat(match[1]),
-                    recipient: match[2],
-                    reason: match[3] || 'Transfer',
-                    isValid: true,
-                    category: null,
-                };
-
-                // 检测文本中是否提到了分类
-                const lowerText = text.toLowerCase();
+                const result = { type: 'transfer', amount: parseFloat(match[1]), recipient: match[2], reason: match[3] || 'Transfer', isValid: true, category: null };
                 const categoryKeywords = {
                     'dining': ['dining', 'food', 'restaurant', 'lunch', 'dinner', 'breakfast', 'coffee', 'meal', 'eat', '吃饭', '餐饮', '咖啡'],
                     'shopping': ['shopping', 'shop', 'buy', 'purchase', 'store', '购物', '买'],
@@ -122,101 +152,108 @@ export function AIChatInterface({ onTransferRequest }) {
                     'bills': ['bill', 'rent', 'utility', 'payment', 'fee', '账单', '租金'],
                     'other': ['other', 'misc', 'miscellaneous', '其他'],
                 };
-
-                // 检查是否匹配任何分类关键词
                 for (const [category, keywords] of Object.entries(categoryKeywords)) {
                     if (keywords.some(keyword => lowerText.includes(keyword))) {
                         result.category = category;
                         break;
                     }
                 }
-
                 return result;
             }
         }
 
-        return { isValid: false };
+        return { type: 'unknown', isValid: false };
     };
 
     const handleSendMessage = async (messageText = input) => {
         if (!messageText.trim() || !connected) return;
 
-        const userMessage = {
-            role: 'user',
-            content: messageText,
-            timestamp: Date.now(),
-        };
-
+        const userMessage = { role: 'user', content: messageText, timestamp: Date.now() };
         setMessages(prev => [...prev, userMessage]);
         setInput('');
         setIsProcessing(true);
 
-        // 检查是否是转账命令
-        const parsed = parseTransferCommand(messageText);
+        const parsed = parseCommand(messageText);
 
-        if (parsed.isValid) {
-            // 查找好友
-            const friend = friends.find(f =>
-                f.username.toLowerCase() === parsed.recipient.toLowerCase()
-            );
+        if (parsed.type === 'create-fund') {
+            const confirmMsg = {
+                role: 'assistant',
+                content: '🎯 You want to create a Funding Event!\n\nThis will allow others to apply for funding from your pool.\n\nWould you like to proceed?',
+                timestamp: Date.now(),
+                action: { type: 'confirm-create-fund' },
+            };
+            setMessages(prev => [...prev, confirmMsg]);
+            setIsProcessing(false);
+        } else if (parsed.type === 'create-bill') {
+            const mentionedFriends = parsed.mentions.map(username => 
+                friends.find(f => f.username?.toLowerCase() === username.toLowerCase())
+            ).filter(Boolean);
 
+            if (parsed.mentions.length > 0 && mentionedFriends.length === 0) {
+                const errorMsg = { role: 'assistant', content: `❌ Could not find users: ${parsed.mentions.map(m => '@' + m).join(', ')}\n\nMake sure they are in your friends list!`, timestamp: Date.now() };
+                setMessages(prev => [...prev, errorMsg]);
+                setIsProcessing(false);
+                return;
+            }
+
+            if (mentionedFriends.length > 0 && parsed.amount) {
+                const perPerson = (parsed.amount / mentionedFriends.length).toFixed(4);
+                const confirmMsg = {
+                    role: 'assistant',
+                    content: `📝 Create Bill\n\n💰 Total: ${parsed.amount} SOL\n👥 Members: ${mentionedFriends.map(f => '@' + f.username).join(', ')}\n💵 Per person: ${perPerson} SOL\n📋 Reason: ${parsed.reason}\n\nConfirm to create this bill?`,
+                    timestamp: Date.now(),
+                    action: { type: 'confirm-create-bill', data: { friends: mentionedFriends, amount: parsed.amount, reason: parsed.reason } },
+                };
+                setMessages(prev => [...prev, confirmMsg]);
+            } else {
+                const helpMsg = { role: 'assistant', content: `📝 To create a bill, please include:\n\n• @mention the friends to split with\n• Amount in SOL\n• (Optional) Reason\n\nExample: "create bill @alice @bob 2 SOL dinner"`, timestamp: Date.now() };
+                setMessages(prev => [...prev, helpMsg]);
+            }
+            setIsProcessing(false);
+        } else if (parsed.type === 'transfer' && parsed.isValid) {
+            const friend = friends.find(f => f.username?.toLowerCase() === parsed.recipient.toLowerCase());
             if (friend) {
-                // 检查是否已经检测到分类
                 if (parsed.category) {
-                    // 已有分类，直接显示确认消息
                     const categoryInfo = EXPENSE_CATEGORIES.find(c => c.id === parsed.category);
                     const confirmMsg = {
                         role: 'assistant',
                         content: `💰 Transfer Request\n\nAmount: ${parsed.amount} SOL\nTo: @${friend.username} (${friend.displayName})\nCategory: ${categoryInfo?.emoji} ${categoryInfo?.name}\nReason: ${parsed.reason}\n\nReady to transfer?`,
                         timestamp: Date.now(),
-                        action: {
-                            type: 'confirm-transfer',
-                            data: { amount: parsed.amount, friend, reason: parsed.reason, category: parsed.category },
-                        }
+                        action: { type: 'confirm-transfer', data: { amount: parsed.amount, friend, reason: parsed.reason, category: parsed.category } },
                     };
                     setMessages(prev => [...prev, confirmMsg]);
                 } else {
-                    // 没有分类，显示分类选择消息
                     const categoryMsg = {
                         role: 'assistant',
-                        content: `💰 Transfer Request\n\nAmount: ${parsed.amount} SOL\nTo: @${friend.username} (${friend.displayName})\n\nPlease select a category for this expense:`,
+                        content: `💰 Transfer Request\n\nAmount: ${parsed.amount} SOL\nTo: @${friend.username} (${friend.displayName})\n\nPlease select a category:`,
                         timestamp: Date.now(),
-                        action: {
-                            type: 'select-category',
-                            data: { amount: parsed.amount, friend, reason: parsed.reason },
-                        }
+                        action: { type: 'select-category', data: { amount: parsed.amount, friend, reason: parsed.reason } },
                     };
                     setMessages(prev => [...prev, categoryMsg]);
                 }
-
-                setIsProcessing(false);
-
-                // 通知父组件
-                if (onTransferRequest) {
-                    onTransferRequest(parsed);
-                }
+                if (onTransferRequest) onTransferRequest(parsed);
             } else {
-                // 好友不存在
-                const errorMsg = {
-                    role: 'assistant',
-                    content: `❌ User @${parsed.recipient} not found in your friends list.\n\nMake sure they are your friend first!`,
-                    timestamp: Date.now(),
-                };
+                const errorMsg = { role: 'assistant', content: `❌ User @${parsed.recipient} not found in your friends list.`, timestamp: Date.now() };
                 setMessages(prev => [...prev, errorMsg]);
-                setIsProcessing(false);
             }
+            setIsProcessing(false);
         } else {
-            // 普通对话
+            // 普通对话 - 友好回复并说明功能
             setTimeout(() => {
+                const lowerText = messageText.toLowerCase();
+                const greetings = ['hello', 'hi', 'hey', '你好', 'hola', 'yo', 'sup', 'what can you do', 'help', '帮助'];
+                const isGreeting = greetings.some(g => lowerText.includes(g));
+                
                 const assistantMessage = {
                     role: 'assistant',
-                    content: 'I did not quite understand that. Please try saying something like:\n• Send 2 SOL to @Alice\n• Transfer 0.5 SOL to @Bob for dinner\n\nMake sure to use @ before the username!',
+                    content: isGreeting 
+                        ? `Hey there! 👋 I'm your AI assistant. Here's what I can do:\n\n💸 **Transfer SOL**\n"Send 2 SOL to @Alice for coffee"\n\n🎯 **Create Funding Event**\n"Create fund" - Set up a pool for others to apply\n\n📝 **Split Bills**\n"Create bill @Alice @Bob 1.5 SOL dinner"\n\nJust type a command or use @ to mention friends!`
+                        : `I'm not sure what you mean. Here's what I can help with:\n\n• 💸 "Send 2 SOL to @Alice for coffee"\n• 🎯 "Create fund" - Start a funding event\n• 📝 "Create bill @Alice @Bob 1.5 SOL dinner"\n\nTry one of these!`,
                     timestamp: Date.now(),
                 };
-
                 setMessages(prev => [...prev, assistantMessage]);
                 setIsProcessing(false);
-            }, 1000);
+            }, 300);
         }
     };
 
@@ -269,26 +306,73 @@ export function AIChatInterface({ onTransferRequest }) {
 
     // 过滤好友列表
     const filteredFriends = friends.filter(f =>
-        f.username.toLowerCase().includes(mentionSearch) ||
-        f.displayName.toLowerCase().includes(mentionSearch)
+        f.username?.toLowerCase().includes(mentionSearch) ||
+        f.displayName?.toLowerCase().includes(mentionSearch)
     );
 
     // 处理分类选择
     const handleCategorySelect = (category, transferData) => {
-        setSelectedCategory(category);
-
-        // 显示确认消息
         const confirmMsg = {
             role: 'assistant',
-            content: `✅ Category Selected: ${EXPENSE_CATEGORIES.find(c => c.id === category)?.emoji} ${EXPENSE_CATEGORIES.find(c => c.id === category)?.name}\n\n💰 Transfer Summary\n\nAmount: ${transferData.amount} SOL\nTo: @${transferData.friend.username} (${transferData.friend.displayName})\nCategory: ${EXPENSE_CATEGORIES.find(c => c.id === category)?.name}\nReason: ${transferData.reason}\n\nReady to transfer?`,
+            content: `✅ Category: ${EXPENSE_CATEGORIES.find(c => c.id === category)?.emoji} ${EXPENSE_CATEGORIES.find(c => c.id === category)?.name}\n\n💰 ${transferData.amount} SOL → @${transferData.friend.username}\n\nReady to transfer?`,
             timestamp: Date.now(),
-            action: {
-                type: 'confirm-transfer',
-                data: { ...transferData, category },
-            }
+            action: { type: 'confirm-transfer', data: { ...transferData, category } },
         };
-
         setMessages(prev => [...prev, confirmMsg]);
+    };
+
+    // 创建 Funding Event
+    const handleCreateFund = async () => {
+        if (!fundFormData.title || !fundFormData.amount || !fundFormData.deadline) {
+            toast.error('Please fill all required fields');
+            return;
+        }
+        try {
+            const eventData = { title: fundFormData.title, description: fundFormData.description, createdAt: Date.now() };
+            const ipfsResult = await uploadJSON(eventData, { name: `event-${fundFormData.title}.json` });
+            if (!ipfsResult.success) throw new Error('Failed to upload to IPFS');
+
+            const amount = Math.floor(parseFloat(fundFormData.amount) * LAMPORTS_PER_SOL);
+            const deadline = Math.floor(new Date(fundFormData.deadline).getTime() / 1000);
+            const result = await createEvent(fundFormData.title, amount, deadline, ipfsResult.ipfsHash);
+
+            if (result.success) {
+                toast.success('🎉 Funding event created!');
+                setShowFundModal(false);
+                setFundFormData({ title: '', description: '', amount: '', deadline: '' });
+                const successMsg = { role: 'assistant', content: `✅ Funding Event Created!\n\n📋 ${fundFormData.title}\n💰 ${fundFormData.amount} SOL\n📅 Deadline: ${fundFormData.deadline}\n\nGo to Funding > Manage Events to view applications.`, timestamp: Date.now() };
+                setMessages(prev => [...prev, successMsg]);
+            } else {
+                toast.error('Failed: ' + result.error);
+            }
+        } catch (error) {
+            toast.error('Failed: ' + error.message);
+        }
+    };
+
+    // 创建 Bill
+    const handleCreateBill = async (billData) => {
+        try {
+            toast.info('Creating bill...');
+            const result = await createGroupSplit({
+                title: billData.reason,
+                totalAmount: billData.amount,
+                members: billData.friends.map(f => f.address),
+                ipfsHash: 'QmDefault',
+            });
+            toast.success('📝 Bill created!');
+            const successMsg = { role: 'assistant', content: `✅ Bill Created!\n\n📋 ${billData.reason}\n💰 ${billData.amount} SOL\n👥 ${billData.friends.map(f => '@' + f.username).join(', ')}\n\nView it in Bills > My Created Bills`, timestamp: Date.now() };
+            setMessages(prev => [...prev, successMsg]);
+        } catch (error) {
+            toast.error('Failed: ' + error.message);
+            const errorMsg = { role: 'assistant', content: `❌ Failed to create bill: ${error.message}`, timestamp: Date.now() };
+            setMessages(prev => [...prev, errorMsg]);
+        }
+    };
+
+    const handleCancelAction = () => {
+        const cancelMsg = { role: 'assistant', content: '❌ Cancelled.', timestamp: Date.now() };
+        setMessages(prev => [...prev, cancelMsg]);
     };
 
     // 执行转账
@@ -374,15 +458,12 @@ export function AIChatInterface({ onTransferRequest }) {
     };
 
     const handleCancelTransfer = () => {
-        const cancelMsg = {
-            role: 'assistant',
-            content: '❌ Transfer cancelled.',
-            timestamp: Date.now(),
-        };
+        const cancelMsg = { role: 'assistant', content: '❌ Transfer cancelled.', timestamp: Date.now() };
         setMessages(prev => [...prev, cancelMsg]);
     };
 
     return (
+        <>
         <Card className="bg-neutral-900 border-neutral-800 flex flex-col h-[600px]">
             {/* Header */}
             <div className="p-4 border-b border-neutral-800 flex items-center gap-3">
@@ -446,26 +527,26 @@ export function AIChatInterface({ onTransferRequest }) {
                             {/* Confirm Transfer Buttons */}
                             {message.action?.type === 'confirm-transfer' && (
                                 <div className="mt-2 flex gap-2">
-                                    <Button
-                                        size="sm"
-                                        className="bg-green-600 hover:bg-green-700"
-                                        onClick={() => executeTransfer(
-                                            message.action.data.amount,
-                                            message.action.data.friend,
-                                            message.action.data.reason,
-                                            message.action.data.category
-                                        )}
-                                    >
-                                        ✓ Confirm Transfer
+                                    <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => executeTransfer(message.action.data.amount, message.action.data.friend, message.action.data.reason, message.action.data.category)}>
+                                        ✓ Confirm
                                     </Button>
-                                    <Button
-                                        size="sm"
-                                        variant="outline"
-                                        className="bg-neutral-700 hover:bg-neutral-600 border-neutral-600"
-                                        onClick={handleCancelTransfer}
-                                    >
-                                        ✗ Cancel
-                                    </Button>
+                                    <Button size="sm" variant="outline" className="bg-neutral-700 hover:bg-neutral-600 border-neutral-600" onClick={handleCancelAction}>✗ Cancel</Button>
+                                </div>
+                            )}
+
+                            {/* Confirm Create Fund Buttons */}
+                            {message.action?.type === 'confirm-create-fund' && (
+                                <div className="mt-2 flex gap-2">
+                                    <Button size="sm" className="bg-purple-600 hover:bg-purple-700" onClick={() => setShowFundModal(true)}>🎯 Create Fund</Button>
+                                    <Button size="sm" variant="outline" className="bg-neutral-700 hover:bg-neutral-600 border-neutral-600" onClick={handleCancelAction}>✗ Cancel</Button>
+                                </div>
+                            )}
+
+                            {/* Confirm Create Bill Buttons */}
+                            {message.action?.type === 'confirm-create-bill' && (
+                                <div className="mt-2 flex gap-2">
+                                    <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={() => handleCreateBill(message.action.data)}>📝 Create Bill</Button>
+                                    <Button size="sm" variant="outline" className="bg-neutral-700 hover:bg-neutral-600 border-neutral-600" onClick={handleCancelAction}>✗ Cancel</Button>
                                 </div>
                             )}
 
@@ -543,7 +624,7 @@ export function AIChatInterface({ onTransferRequest }) {
                                 value={input}
                                 onChange={handleInputChange}
                                 onKeyPress={handleKeyPress}
-                                placeholder="Type or use voice input... (use @ to mention friends)"
+                                placeholder="Try: hello, create fund, create bill @user 1 SOL..."
                                 className="flex-1 bg-neutral-800 border-neutral-700 text-white"
                                 disabled={isProcessing}
                             />
@@ -570,5 +651,63 @@ export function AIChatInterface({ onTransferRequest }) {
                 )}
             </div>
         </Card>
+
+        {/* Create Fund Modal */}
+        <AnimatePresence>
+            {showFundModal && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+                    onClick={() => setShowFundModal(false)}
+                >
+                    <motion.div
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.9, opacity: 0 }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="bg-white rounded-3xl max-w-md w-full shadow-2xl overflow-hidden"
+                    >
+                        <div className="bg-gradient-to-r from-purple-500 to-cyan-500 p-5 text-white">
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <h2 className="text-xl font-bold">Create Funding Event</h2>
+                                    <p className="text-white/80 text-sm">Set up a new funding pool</p>
+                                </div>
+                                <button onClick={() => setShowFundModal(false)} className="p-2 hover:bg-white/20 rounded-full"><X className="h-5 w-5" /></button>
+                            </div>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <div>
+                                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2"><FileText className="h-4 w-4 text-purple-500" />Event Title</label>
+                                <input value={fundFormData.title} onChange={(e) => setFundFormData({...fundFormData, title: e.target.value})} placeholder="e.g., Community Scholarship" maxLength={64} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 transition-all outline-none" />
+                            </div>
+                            <div>
+                                <label className="text-sm font-medium text-gray-700 mb-2 block">Description</label>
+                                <textarea value={fundFormData.description} onChange={(e) => setFundFormData({...fundFormData, description: e.target.value})} placeholder="Describe the purpose..." rows={2} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 transition-all outline-none resize-none" />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2"><DollarSign className="h-4 w-4 text-purple-500" />Amount (SOL)</label>
+                                    <input type="number" step="0.01" value={fundFormData.amount} onChange={(e) => setFundFormData({...fundFormData, amount: e.target.value})} placeholder="0.00" className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 transition-all outline-none" />
+                                </div>
+                                <div>
+                                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2"><Calendar className="h-4 w-4 text-purple-500" />Deadline</label>
+                                    <input type="date" value={fundFormData.deadline} onChange={(e) => setFundFormData({...fundFormData, deadline: e.target.value})} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 transition-all outline-none" />
+                                </div>
+                            </div>
+                            <div className="flex gap-3 pt-2">
+                                <button onClick={() => setShowFundModal(false)} className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl font-medium text-gray-700">Cancel</button>
+                                <button onClick={handleCreateFund} disabled={isCreatingFund} className="flex-1 py-3 bg-gradient-to-r from-purple-500 to-cyan-500 text-white rounded-xl font-medium disabled:opacity-50">
+                                    {isCreatingFund ? 'Creating...' : 'Create Event'}
+                                </button>
+                            </div>
+                        </div>
+                    </motion.div>
+                </motion.div>
+            )}
+        </AnimatePresence>
+    </>
     );
 }

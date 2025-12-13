@@ -13,7 +13,7 @@ import {
 } from '../pdaHelpers';
 
 /**
- * 初始化用户档案
+ * 初始化用户档案（包含 username 和 avatar）
  */
 export function useInitializeProfile() {
   const wallet = useWallet();
@@ -21,9 +21,13 @@ export function useInitializeProfile() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const initializeProfile = async (username) => {
+  const initializeProfile = async (username, avatar = '1.png') => {
     if (!publicKey) {
       throw new Error('Wallet not connected');
+    }
+
+    if (!username || username.length < 3 || username.length > 20) {
+      throw new Error('Username must be 3-20 characters');
     }
 
     setIsLoading(true);
@@ -34,7 +38,7 @@ export function useInitializeProfile() {
       const [userProfilePDA] = getUserProfilePDA(publicKey);
 
       const tx = await program.methods
-        .initializeProfile(username)
+        .initializeProfile(username, avatar)
         .accounts({
           userProfile: userProfilePDA,
           user: publicKey,
@@ -54,6 +58,53 @@ export function useInitializeProfile() {
   };
 
   return { initializeProfile, isLoading, error };
+}
+
+/**
+ * 更新用户档案（username 和 avatar）
+ */
+export function useUpdateProfile() {
+  const wallet = useWallet();
+  const { publicKey } = wallet;
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const updateProfile = async (username, avatar) => {
+    if (!publicKey) {
+      throw new Error('Wallet not connected');
+    }
+
+    if (!username || username.length < 3 || username.length > 20) {
+      throw new Error('Username must be 3-20 characters');
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const program = getProgram(wallet);
+      const [userProfilePDA] = getUserProfilePDA(publicKey);
+
+      const tx = await program.methods
+        .updateProfile(username, avatar)
+        .accounts({
+          userProfile: userProfilePDA,
+          user: publicKey,
+        })
+        .rpc();
+
+      console.log('Profile updated:', tx);
+      return { success: true, signature: tx };
+    } catch (err) {
+      console.error('Error updating profile:', err);
+      setError(err.message);
+      return { success: false, error: err.message };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return { updateProfile, isLoading, error };
 }
 
 /**
@@ -129,16 +180,8 @@ export function useSendFriendRequest() {
       const myProfile = await program.account.userProfile.fetchNullable(myProfilePDA);
 
       if (!myProfile) {
-        console.log('Initializing your profile first...');
-        const initTx = await program.methods
-          .initializeProfile()
-          .accounts({
-            userProfile: myProfilePDA,
-            user: publicKey,
-            systemProgram: SystemProgram.programId,
-          })
-          .rpc();
-        console.log('Your profile initialized:', initTx);
+        // Profile 必须先通过 ProfileSetupModal 创建
+        throw new Error('Please set up your profile first before adding friends');
       }
 
       // 排序 keys（合约要求排序后的 keys）

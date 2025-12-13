@@ -7,6 +7,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { User, Wallet } from 'lucide-react';
 import { Card } from './ui/card';
 
+// Helper to get avatar path from filename
+const getAvatarPath = (name) => name ? `/avatar/${name}` : null;
+
 export function ContactAutocomplete({ contacts, onSelect, position }) {
   if (!contacts || contacts.length === 0) return null;
 
@@ -34,8 +37,16 @@ export function ContactAutocomplete({ contacts, onSelect, position }) {
                 onClick={() => onSelect(contact)}
                 className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-neutral-800 transition-colors text-left"
               >
-                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center flex-shrink-0">
-                  <User className="h-4 w-4 text-white" />
+                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                  {contact.avatar ? (
+                    <img 
+                      src={getAvatarPath(contact.avatar)} 
+                      alt={contact.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <User className="h-4 w-4 text-white" />
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-sm text-neutral-100 font-medium">

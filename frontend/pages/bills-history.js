@@ -109,22 +109,22 @@ export default function BillsHistoryPage() {
 
                 {/* Stats Overview */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                    <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+                    <div className="bg-white rounded-2xl p-5 shadow-md border border-gray-200">
                         <div className="text-3xl mb-2">📊</div>
                         <div className="text-3xl font-bold text-gray-800">{stats.totalBills}</div>
                         <div className="text-sm text-gray-500">Total Bills</div>
                     </div>
-                    <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+                    <div className="bg-white rounded-2xl p-5 shadow-md border border-gray-200">
                         <div className="text-3xl mb-2">👑</div>
                         <div className="text-3xl font-bold text-purple-600">{stats.asCreator}</div>
                         <div className="text-sm text-gray-500">Created by You</div>
                     </div>
-                    <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+                    <div className="bg-white rounded-2xl p-5 shadow-md border border-gray-200">
                         <div className="text-3xl mb-2">👤</div>
                         <div className="text-3xl font-bold text-blue-600">{stats.asMember}</div>
                         <div className="text-sm text-gray-500">As Member</div>
                     </div>
-                    <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+                    <div className="bg-white rounded-2xl p-5 shadow-md border border-gray-200">
                         <div className="text-3xl mb-2">💰</div>
                         <div className="text-3xl font-bold text-green-600">{stats.totalPaid.toFixed(3)}</div>
                         <div className="text-sm text-gray-500">SOL Paid</div>
@@ -132,7 +132,7 @@ export default function BillsHistoryPage() {
                 </div>
 
                 {/* Sort Controls */}
-                <div className="bg-white rounded-2xl p-4 shadow-sm mb-6 flex flex-wrap items-center gap-4">
+                <div className="bg-white rounded-2xl p-4 shadow-md border border-gray-200 mb-6 flex flex-wrap items-center gap-4">
                     <span className="text-sm font-medium text-gray-600">Sort by:</span>
                     <div className="flex gap-2">
                         {[
@@ -167,7 +167,7 @@ export default function BillsHistoryPage() {
                         <p className="mt-4 text-gray-600 font-medium">Loading history...</p>
                     </div>
                 ) : sortedBills.length === 0 ? (
-                    <div className="text-center py-20 bg-white rounded-3xl shadow-sm">
+                    <div className="text-center py-20 bg-white rounded-3xl shadow-md border border-gray-200">
                         <div className="text-7xl mb-4">📭</div>
                         <h2 className="text-2xl font-bold mb-2">No History Yet</h2>
                         <p className="text-gray-600 mb-6">Your payment history will appear here.</p>
@@ -179,7 +179,7 @@ export default function BillsHistoryPage() {
                         </button>
                     </div>
                 ) : (
-                    <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+                    <div className="bg-white rounded-2xl shadow-md border border-gray-200 overflow-hidden">
                         {/* Table Header */}
                         <div className="hidden md:grid grid-cols-12 gap-4 p-4 bg-gray-50 border-b text-sm font-semibold text-gray-600">
                             <div className="col-span-4">Bill</div>

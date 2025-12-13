@@ -4,19 +4,25 @@
  */
 
 import { transferSolFunction, prepareTransferSol } from "./executeSolanaTransfer";
+import { createFundingEventFunction, prepareCreateFundingEvent } from "./createFundingEvent";
+import { createBillFunction, prepareCreateBill } from "./createBill";
 
 /**
  * All available functions that the AI agent can call
- * Currently supports SOL transfers on Solana devnet
  */
-export const availableFunctions = [transferSolFunction];
+export const availableFunctions = [
+  transferSolFunction,
+  createFundingEventFunction,
+  createBillFunction,
+];
 
 /**
  * Function executor - maps function names to their implementations
  */
 export const functionExecutors = {
   transfer_sol: prepareTransferSol,
-  // Add more function executors here as you add new capabilities
+  create_funding_event: prepareCreateFundingEvent,
+  create_bill: prepareCreateBill,
 };
 
 /**
