@@ -59,13 +59,41 @@ export default function GroupSplitDetailPage() {
     }, [details]);
 
     const fetchIpfsData = async (hash) => {
+        // Skip if hash looks invalid
+        if (!hash || hash.length < 10 || hash === 'QmDefault') {
+            return;
+        }
+
         setLoadingIpfs(true);
         try {
-            const response = await fetch(`https://gateway.pinata.cloud/ipfs/${hash}`);
-            const data = await response.json();
-            setIpfsData(data);
+            // Try multiple IPFS gateways
+            const gateways = [
+                `https://gateway.pinata.cloud/ipfs/${hash}`,
+                `https://ipfs.io/ipfs/${hash}`,
+                `https://cloudflare-ipfs.com/ipfs/${hash}`,
+            ];
+
+            let data = null;
+            for (const gateway of gateways) {
+                try {
+                    const response = await fetch(gateway, {
+                        signal: AbortSignal.timeout(5000) // 5 second timeout
+                    });
+                    if (response.ok) {
+                        data = await response.json();
+                        break;
+                    }
+                } catch {
+                    continue; // Try next gateway
+                }
+            }
+
+            if (data) {
+                setIpfsData(data);
+            }
         } catch (err) {
             console.error('Failed to fetch IPFS data:', err);
+            // Don't show error to user, just silently fail
         } finally {
             setLoadingIpfs(false);
         }
