@@ -1,9 +1,27 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { getProgram } from '@/lib/solana/anchorSetup';
 import { getChatRoomPDA } from '@/lib/solana/pdaHelpers';
 import { useIdleDetection } from './useIdleDetection';
+
+// 未读消息管理
+export const setUnreadChat = (friendAddress, hasUnread) => {
+    if (typeof window === 'undefined') return;
+    try {
+        const unread = JSON.parse(localStorage.getItem('unread_chats') || '{}');
+        if (hasUnread) {
+            unread[friendAddress] = true;
+        } else {
+            delete unread[friendAddress];
+        }
+        localStorage.setItem('unread_chats', JSON.stringify(unread));
+        // 触发 storage 事件让其他组件更新
+        window.dispatchEvent(new Event('storage'));
+    } catch (e) {
+        console.error('Error updating unread status:', e);
+    }
+};
 
 /**
  * useRealtimeChatWebSocket Hook
@@ -14,6 +32,7 @@ export function useRealtimeChatWebSocket(friendAddress) {
     const [messages, setMessages] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const { isIdle, resetActivity } = useIdleDetection(60000); // 60秒空闲
+    const lastMessageCountRef = useRef(0);
 
     // 加载消息（客户端直接调用，带本地缓存）
     const loadMessages = useCallback(async (showLoading = false) => {
@@ -85,6 +104,18 @@ export function useRealtimeChatWebSocket(friendAddress) {
                     };
                 })
                 .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+            // 检测是否有新消息（来自对方）
+            const newMessageCount = formattedMessages.length;
+            if (newMessageCount > lastMessageCountRef.current && lastMessageCountRef.current > 0) {
+                // 检查最新消息是否来自对方
+                const latestMsg = formattedMessages[formattedMessages.length - 1];
+                if (latestMsg && !latestMsg.isMine) {
+                    // 设置未读状态
+                    setUnreadChat(friendAddress, true);
+                }
+            }
+            lastMessageCountRef.current = newMessageCount;
 
             setMessages(formattedMessages);
             console.log(`✅ Messages loaded: ${formattedMessages.length} messages`);

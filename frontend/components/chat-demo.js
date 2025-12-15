@@ -71,68 +71,128 @@ const allMessages = [
     {
       id: 1,
       type: "user",
-      text: "Send $20 to @derek eth",
-      timestamp: "2:34 PM",
+      text: "hello",
+      timestamp: "2:33 PM",
     },
     {
       id: 2,
       type: "bot",
-      text: "I'll prepare this transfer for you. Please review the details and confirm.",
-      timestamp: "2:34 PM",
-      intent: {
-        action: "Transfer Confirmation",
-        amount: "20 USDC",
-        recipient: "@derek eth",
-        status: "Awaiting Confirmation",
-      },
+      text: "Hello! 👋 I'm your SolaMate AI assistant. I can help you:",
+      timestamp: "2:33 PM",
+      showWelcome: true, // 显示欢迎消息带功能列表
     },
     {
       id: 3,
-      type: "system",
-      text: "Transaction submitted! Waiting for confirmation...",
+      type: "user",
+      text: "Send $20 to @wong neng horng",
       timestamp: "2:34 PM",
     },
     {
       id: 4,
       type: "bot",
-      text: "✅ Transfer completed successfully! 20 USDC sent to @derek eth.",
-      timestamp: "2:35 PM",
+      text: "I'll prepare this transfer for you. Please review the details and confirm.",
+      timestamp: "2:34 PM",
+      showCategorySelection: true, // 显示分类选择
+      transferData: {
+        amount: 20,
+        friend: { username: "wong neng horng", displayName: "wong neng horng" },
+        reason: "Transfer",
+      },
     },
     {
       id: 5,
-      type: "user",
-      text: "I paid $60 for dinner with @James ETHGlobal, split it equally",
-      timestamp: "2:35 PM",
+      type: "bot",
+      text: "✅ Category Selected: ✈️ Travel",
+      timestamp: "2:34 PM",
+      showConfirmation: true, // 显示确认按钮
+      transferData: {
+        amount: 20,
+        friend: { username: "wong neng horng", displayName: "wong neng horng" },
+        reason: "Transfer",
+        category: "Travel",
+      },
     },
     {
       id: 6,
       type: "bot",
-      text: "I'll create a payment request for 30 USDC from @James ETHGlobal (splitting $60 between 2 people).",
+      text: "✅ Transfer completed successfully! 20 USDC sent to @wong neng horng.",
       timestamp: "2:35 PM",
-      intent: {
-        action: "Payment Request",
-        amount: "30 USDC each",
-        from: "James ETHGlobal",
-        description: "dinner",
-      },
-  },
-  {
-    id: 7,
-    type: "bot",
-    text: "✅ Payment request sent! @James ETHGlobal will receive a notification when they connect their wallet.",
-    timestamp: "2:36 PM",
-  },
-  {
-    id: 8,
-    type: "user",
-    text: "This is amazing! How can I try this out?",
-    timestamp: "2:36 PM",
+    },
+    {
+      id: 7,
+      type: "user",
+      text: "split bill",
+      timestamp: "2:35 PM",
+    },
+    {
+      id: 8,
+      type: "bot",
+      text: "📝 Split Bill",
+      timestamp: "2:35 PM",
+      showSplitBill: true, // 显示 Split Bill 确认 UI
   },
   {
     id: 9,
     type: "bot",
-    text: "Glad you asked! You can try it out here!",
+    text: "✨ Bill Summary",
     timestamp: "2:36 PM",
+    showBillSummary: true, // 显示 Bill Summary UI
+    billData: {
+      title: "Dinner",
+      total: 115,
+      members: ["wong neng horng", "sinhua0201"],
+      perPerson: 57.5,
+    },
+  },
+  {
+    id: 10,
+    type: "bot",
+    text: "✅ Bill created successfully! Your friends will be notified.",
+    timestamp: "2:36 PM",
+  },
+  {
+    id: 11,
+    type: "user",
+    text: "Create Fund",
+    timestamp: "2:37 PM",
+  },
+  {
+    id: 12,
+    type: "bot",
+    text: "🎯 Create Funding Event",
+    timestamp: "2:37 PM",
+    showCreateFund: true, // 显示 Create Fund UI
+  },
+  {
+    id: 13,
+    type: "bot",
+    text: "🎯 Create Funding Event",
+    timestamp: "2:37 PM",
+    showFundingForm: true, // 显示 Funding Event 表单
+  },
+  {
+    id: 14,
+    type: "bot",
+    text: "✅ Funding Event Created!",
+    timestamp: "2:38 PM",
+    showFundingSuccess: true, // 显示成功消息
+    fundData: {
+      title: "Community Scholarship",
+      amount: 100,
+      deadline: "2025-12-31",
+    },
+  },
+  {
+    id: 15,
+    type: "user",
+    text: "This is amazing! How can I try this out?",
+    timestamp: "2:39 PM",
+  },
+  {
+    id: 16,
+    type: "bot",
+    text: "Glad you asked! You can try it out here!",
+    timestamp: "2:39 PM",
   },
 ];
 
@@ -289,7 +349,7 @@ export function ChatDemo() {
                 <div className="flex justify-start">
                   <div className="max-w-[85%]">
                     {/* Clickable CTA message for the last message */}
-                    {message.id === 9 ? (
+                    {message.id === 16 ? (
                       <div>
                         <div className="bg-neutral-800 text-neutral-100 rounded-2xl rounded-tl-md px-4 py-2.5">
                           <p className="text-sm mb-3">{message.text}</p>
@@ -302,6 +362,188 @@ export function ChatDemo() {
                               Try it Now →
                             </PulsatingButton>
                           </Link>
+                        </div>
+                      </div>
+                    ) : message.showWelcome ? (
+                      /* Welcome message with feature list */
+                      <div className="bg-neutral-800 text-neutral-100 rounded-2xl rounded-tl-md px-4 py-3">
+                        <p className="text-sm mb-3">
+                          <HighlightedText text={message.text} />
+                        </p>
+                        <div className="space-y-1.5 text-sm">
+                          <p>💸 Send USDC: <span className="text-neutral-400">&quot;send 10 USDC to @username&quot;</span></p>
+                          <p>🎯 Create Fund: <span className="text-neutral-400">&quot;create fund&quot;</span></p>
+                          <p>📝 Split Bill: <span className="text-neutral-400">&quot;create bill @alice @bob 20 USDC dinner&quot;</span></p>
+                        </div>
+                        <p className="text-sm mt-3 text-neutral-300">What would you like to do?</p>
+                      </div>
+                    ) : message.showCategorySelection ? (
+                      /* Category Selection UI - like chat-window */
+                      <div className="bg-neutral-800 text-neutral-100 rounded-2xl rounded-tl-md px-4 py-3">
+                        <p className="text-sm mb-3">
+                          <HighlightedText text={message.text} />
+                        </p>
+                        <div className="bg-neutral-900/50 rounded-xl p-3 border border-neutral-700">
+                          <p className="text-xs text-neutral-400 mb-2">💰 Transfer Request</p>
+                          <p className="text-sm font-medium">Amount: {message.transferData?.amount} USDC</p>
+                          <p className="text-sm">To: @{message.transferData?.friend?.username}</p>
+                          <p className="text-xs text-neutral-400 mt-3 mb-2">Select a category:</p>
+                          <div className="grid grid-cols-4 gap-2">
+                            {['🍽️', '🛍️', '🎮', '✈️', '🎁', '📄', '📦'].map((emoji, i) => (
+                              <button key={i} className="p-2 bg-neutral-700/50 hover:bg-neutral-600/50 rounded-lg text-lg transition-colors">
+                                {emoji}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    ) : message.showConfirmation ? (
+                      /* Confirmation UI with buttons */
+                      <div className="bg-neutral-800 text-neutral-100 rounded-2xl rounded-tl-md px-4 py-3">
+                        <p className="text-sm mb-3">
+                          <HighlightedText text={message.text} />
+                        </p>
+                        <div className="bg-neutral-900/50 rounded-xl p-3 border border-neutral-700 mb-3">
+                          <p className="text-xs text-neutral-400 mb-2">💰 Transfer Summary</p>
+                          <p className="text-sm">Amount: {message.transferData?.amount} USDC</p>
+                          <p className="text-sm">To: @{message.transferData?.friend?.username}</p>
+                          <p className="text-sm">Category: ✈️ Travel</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <button className="flex-1 py-2 bg-green-500 hover:bg-green-600 text-white rounded-xl text-sm font-medium transition-colors">
+                            ✓ Confirm
+                          </button>
+                          <button className="flex-1 py-2 bg-neutral-700 hover:bg-neutral-600 text-white rounded-xl text-sm font-medium transition-colors">
+                            ✕ Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : message.showSplitBill ? (
+                      /* Split Bill UI */
+                      <div className="bg-neutral-800 text-neutral-100 rounded-2xl rounded-tl-md px-4 py-3">
+                        <p className="text-sm font-medium mb-2">
+                          <HighlightedText text={message.text} />
+                        </p>
+                        <p className="text-sm text-neutral-300 mb-1">You want to split expenses with friends.</p>
+                        <p className="text-sm text-neutral-400 mb-3">Click &quot;Create Bill&quot; to select friends and set the amount!</p>
+                        <div className="flex gap-2">
+                          <button className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-xl text-sm font-medium transition-colors">
+                            📝 Create Bill
+                          </button>
+                          <button className="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 text-white rounded-xl text-sm font-medium transition-colors">
+                            ✕ Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : message.showCreateFund ? (
+                      /* Create Fund UI */
+                      <div className="bg-neutral-800 text-neutral-100 rounded-2xl rounded-tl-md px-4 py-3">
+                        <p className="text-sm font-medium mb-2">
+                          <HighlightedText text={message.text} />
+                        </p>
+                        <p className="text-sm text-neutral-300 mb-1">You want to create a funding pool that others can apply to.</p>
+                        <p className="text-sm text-neutral-400 mb-3">Click &quot;Create Fund&quot; to set up your event!</p>
+                        <div className="flex gap-2">
+                          <button className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-xl text-sm font-medium transition-colors">
+                            🎯 Create Fund
+                          </button>
+                          <button className="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 text-white rounded-xl text-sm font-medium transition-colors">
+                            ✕ Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : message.showFundingForm ? (
+                      /* Funding Event Form UI */
+                      <div className="bg-neutral-800 text-neutral-100 rounded-2xl rounded-tl-md overflow-hidden w-80">
+                        {/* Header */}
+                        <div className="bg-gradient-to-r from-purple-500 to-cyan-500 px-4 py-3">
+                          <p className="text-sm font-bold">Create Funding Event</p>
+                          <p className="text-xs text-white/70">Set up a new funding pool</p>
+                        </div>
+                        {/* Form */}
+                        <div className="p-4 space-y-3">
+                          <div>
+                            <p className="text-xs text-neutral-400 mb-1">📋 Event Title</p>
+                            <div className="bg-neutral-700/50 rounded-lg px-3 py-2 text-sm text-neutral-400">e.g., Community Scholarship</div>
+                          </div>
+                          <div>
+                            <p className="text-xs text-neutral-400 mb-1">Description</p>
+                            <div className="bg-neutral-700/50 rounded-lg px-3 py-2 text-sm text-neutral-400 h-12">Describe the purpose...</div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <p className="text-xs text-neutral-400 mb-1">💰 Amount (USDC)</p>
+                              <div className="bg-neutral-700/50 rounded-lg px-3 py-2 text-sm text-neutral-400">0.00</div>
+                            </div>
+                            <div>
+                              <p className="text-xs text-neutral-400 mb-1">📅 Deadline</p>
+                              <div className="bg-neutral-700/50 rounded-lg px-3 py-2 text-sm text-neutral-400">mm/dd/yyyy</div>
+                            </div>
+                          </div>
+                          <div className="flex gap-2 pt-2">
+                            <button className="flex-1 py-2 bg-neutral-700 hover:bg-neutral-600 text-white rounded-xl text-sm font-medium transition-colors">Cancel</button>
+                            <button className="flex-1 py-2 bg-gradient-to-r from-purple-500 to-cyan-500 text-white rounded-xl text-sm font-medium transition-colors">Create Event</button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : message.showFundingSuccess ? (
+                      /* Funding Success UI */
+                      <div className="bg-neutral-800 text-neutral-100 rounded-2xl rounded-tl-md px-4 py-3">
+                        <p className="text-sm font-medium mb-3">
+                          <HighlightedText text={message.text} />
+                        </p>
+                        <div className="space-y-1 text-sm">
+                          <p>📋 {message.fundData?.title}</p>
+                          <p>💰 {message.fundData?.amount} USDC</p>
+                          <p>📅 Deadline: {message.fundData?.deadline}</p>
+                        </div>
+                        <p className="text-sm text-neutral-400 mt-3">Go to Funding &gt; Manage Events to view applications.</p>
+                      </div>
+                    ) : message.showBillSummary ? (
+                      /* Bill Summary UI - like the modal */
+                      <div className="bg-neutral-800 text-neutral-100 rounded-2xl rounded-tl-md overflow-hidden w-80">
+                        {/* Header */}
+                        <div className="bg-gradient-to-r from-purple-500 to-blue-500 px-4 py-3">
+                          <p className="text-sm font-bold">✨ Create New Bill</p>
+                          <p className="text-xs text-white/70">Split expenses with friends</p>
+                          {/* Step indicator */}
+                          <div className="flex items-center gap-2 mt-2">
+                            <div className="w-5 h-5 rounded-full bg-white text-purple-600 flex items-center justify-center text-xs font-bold">✓</div>
+                            <div className="w-6 h-0.5 bg-white/50" />
+                            <div className="w-5 h-5 rounded-full bg-white text-purple-600 flex items-center justify-center text-xs font-bold">✓</div>
+                            <div className="w-6 h-0.5 bg-white/50" />
+                            <div className="w-5 h-5 rounded-full bg-white/30 text-white flex items-center justify-center text-xs font-bold">3</div>
+                          </div>
+                        </div>
+                        {/* Content */}
+                        <div className="p-4">
+                          <div className="bg-neutral-900/50 rounded-xl p-3 border border-neutral-700 mb-3">
+                            <p className="text-xs text-neutral-400 mb-2">✨ Bill Summary</p>
+                            <div className="space-y-2 text-sm">
+                              <div className="flex justify-between"><span className="text-neutral-400">Title</span><span className="font-medium">{message.billData?.title}</span></div>
+                              <div className="flex justify-between"><span className="text-neutral-400">Total</span><span className="font-bold text-purple-400">{message.billData?.total} USDC</span></div>
+                              <div className="flex justify-between"><span className="text-neutral-400">Members</span><span>{message.billData?.members?.length}</span></div>
+                              <div className="border-t border-neutral-700 pt-2 flex justify-between"><span className="text-neutral-400">Per Person</span><span className="font-bold text-purple-400">{message.billData?.perPerson} USDC</span></div>
+                            </div>
+                          </div>
+                          {/* Members */}
+                          <div className="flex gap-2 mb-3">
+                            {message.billData?.members?.map((m, i) => (
+                              <div key={i} className="flex items-center gap-1.5 bg-neutral-700/50 px-2 py-1 rounded-full text-xs">
+                                <div className="w-4 h-4 rounded-full bg-gradient-to-br from-purple-500 to-blue-500" />
+                                <span>{m}</span>
+                              </div>
+                            ))}
+                          </div>
+                          {/* Buttons */}
+                          <div className="flex gap-2">
+                            <button className="flex-1 py-2 bg-neutral-700 hover:bg-neutral-600 text-white rounded-xl text-sm font-medium transition-colors">
+                              Back
+                            </button>
+                            <button className="flex-1 py-2 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white rounded-xl text-sm font-medium transition-colors">
+                              🎉 Create Bill
+                            </button>
+                          </div>
                         </div>
                       </div>
                     ) : (
@@ -403,7 +645,7 @@ export function ChatDemo() {
               <div className="flex justify-start">
                 <div className="max-w-[85%]">
                   {/* Show clickable style for last message while typing */}
-                  {typingMessageId === 9 ? (
+                  {typingMessageId === 16 ? (
                     <div className="bg-neutral-800 text-neutral-100 rounded-2xl rounded-tl-md px-4 py-2.5">
                       <p className="text-sm">
                         <HighlightedText text={typingText} />

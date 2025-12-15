@@ -3,17 +3,18 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { Navbar } from '@/components/navbar';
 import ChatSidebar from '@/components/chat-sidebar';
 import ChatWindow from '@/components/chat-window';
+import { useFriendsCache } from '@/hooks/useFriendsCache';
+import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 
 export default function ChatPage() {
   const { publicKey, connected } = useWallet();
   const [selectedChat, setSelectedChat] = useState(null);
-  const [friends, setFriends] = useState([]);
-
-  useEffect(() => {
-    if (connected && publicKey) {
-      loadFriends();
-    }
-  }, [connected, publicKey]);
+  
+  // 使用共享的好友缓存
+  const { friends } = useFriendsCache();
+  
+  // 使用未读消息检测
+  useUnreadMessages(friends, selectedChat?.id);
 
   useEffect(() => {
     // 从 localStorage 读取选中的聊天
@@ -29,11 +30,6 @@ export default function ChatPage() {
       }
     }
   }, []);
-
-  const loadFriends = async () => {
-    // 加载好友列表
-    // TODO: 从区块链获取
-  };
 
   return (
     <div className="h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-white to-purple-50">

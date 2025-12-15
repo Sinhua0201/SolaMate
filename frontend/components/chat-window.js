@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useSendMessage, useInitializeChatRoom } from '@/lib/solana/hooks/useChatProgram';
 import { useRecordExpense, ExpenseCategory } from '@/lib/solana/hooks/useExpenseProgram';
-import { useRealtimeChatWebSocket } from '@/hooks/useRealtimeChatWebSocket';
+import { useRealtimeChatWebSocket, setUnreadChat } from '@/hooks/useRealtimeChatWebSocket';
 import { useCreateFundingEvent } from '@/lib/solana/hooks/useFundingProgram';
 import { useCreateGroupSplit } from '@/lib/solana/hooks/useGroupSplit';
 import { useIPFS } from '@/hooks/useIPFS';
@@ -49,6 +49,7 @@ export default function ChatWindow({ selectedChat }) {
   const [isListening, setIsListening] = useState(false);
   const [voiceError, setVoiceError] = useState(null);
   const scrollRef = useRef(null);
+  const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
   const EXPENSE_CATEGORIES = [
@@ -82,6 +83,10 @@ export default function ChatWindow({ selectedChat }) {
   useEffect(() => {
     if (selectedChat) {
       loadMessages();
+      // 清除未读状态
+      if (selectedChat.type === 'friend' && selectedChat.id) {
+        setUnreadChat(selectedChat.id, false);
+      }
     }
   }, [selectedChat]);
 
@@ -130,11 +135,14 @@ export default function ChatWindow({ selectedChat }) {
     }
   };
 
+  // 自动滚动到最新消息
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   useEffect(() => {
-    // 自动滚动到底部
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    // 消息更新时滚动到底部
+    scrollToBottom();
   }, [messages]);
 
   const loadMessages = async () => {
@@ -1059,6 +1067,8 @@ export default function ChatWindow({ selectedChat }) {
                   }}
                 />
               ))}
+              {/* Scroll anchor - always scroll to this element */}
+              <div ref={messagesEndRef} />
             </div>
           )}
         </ScrollArea>
@@ -1270,10 +1280,16 @@ export default function ChatWindow({ selectedChat }) {
 
 function MessageBubble({ message, isAI, friendAvatar, onConfirmTransfer, onCancelTransfer, onPaymentRequestResponse, onCategorySelect, onOpenFundModal, onOpenBillModal }) {
   const isMine = message.isMine;
-  const time = new Date(message.timestamp).toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  const msgDate = new Date(message.timestamp);
+  const today = new Date();
+  const isToday = msgDate.toDateString() === today.toDateString();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const isYesterday = msgDate.toDateString() === yesterday.toDateString();
+  
+  const timeStr = msgDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  const dateStr = isToday ? '' : isYesterday ? 'Yesterday ' : msgDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ';
+  const time = dateStr + timeStr;
 
   return (
     <div className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>

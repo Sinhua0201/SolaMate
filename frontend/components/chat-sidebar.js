@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, Bot, User, MessageCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -7,11 +7,41 @@ import { useFriendsCache } from '@/hooks/useFriendsCache';
 // Helper to get avatar path from filename
 const getAvatarPath = (name) => name ? `/avatar/${name}` : null;
 
-export default function ChatSidebar({ selectedChat, onSelectChat }) {
+// 获取未读状态
+const getUnreadChats = () => {
+  if (typeof window === 'undefined') return {};
+  try {
+    return JSON.parse(localStorage.getItem('unread_chats') || '{}');
+  } catch {
+    return {};
+  }
+};
+
+export default function ChatSidebar({ selectedChat, onSelectChat, unreadChats = {} }) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [localUnread, setLocalUnread] = useState({});
 
   // 使用共享的好友缓存
   const { friends, isLoading } = useFriendsCache();
+
+  // 监听 localStorage 变化和 props
+  useEffect(() => {
+    setLocalUnread(getUnreadChats());
+    
+    const handleStorage = () => setLocalUnread(getUnreadChats());
+    window.addEventListener('storage', handleStorage);
+    
+    // 定期检查更新
+    const interval = setInterval(() => setLocalUnread(getUnreadChats()), 2000);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      clearInterval(interval);
+    };
+  }, []);
+
+  // 合并 props 和 localStorage 的未读状态
+  const mergedUnread = { ...localUnread, ...unreadChats };
 
 
 
@@ -78,6 +108,7 @@ export default function ChatSidebar({ selectedChat, onSelectChat }) {
                   avatarSrc: friend.avatar ? getAvatarPath(friend.avatar) : null,
                   lastMessage: friend.lastMessage,
                   unread: friend.unread,
+                  hasUnread: mergedUnread[friend.address] === true,
                 }}
                 isSelected={selectedChat?.id === friend.address}
                 onClick={() => onSelectChat({
@@ -110,7 +141,7 @@ function ChatItem({ chat, isSelected, onClick }) {
     >
       {/* Avatar */}
       <div className={`
-        w-12 h-12 rounded-full flex items-center justify-center overflow-hidden shadow-lg
+        w-12 h-12 rounded-full flex items-center justify-center overflow-hidden shadow-lg flex-shrink-0
         ${chat.type === 'ai'
           ? 'bg-gradient-to-br from-purple-500 to-cyan-500 shadow-purple-500/20'
           : 'bg-gradient-to-br from-blue-500 to-green-500 shadow-blue-500/20'
@@ -128,7 +159,13 @@ function ChatItem({ chat, isSelected, onClick }) {
       {/* Info */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between mb-1">
-          <h3 className="font-semibold truncate text-neutral-800">{chat.name}</h3>
+          <div className="flex items-center gap-1.5">
+            <h3 className="font-semibold truncate text-neutral-800">{chat.name}</h3>
+            {/* Red dot for unread messages - next to username */}
+            {chat.hasUnread && !isSelected && (
+              <div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse flex-shrink-0" />
+            )}
+          </div>
           {chat.unread > 0 && (
             <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full shadow-lg shadow-blue-500/30">
               {chat.unread}
