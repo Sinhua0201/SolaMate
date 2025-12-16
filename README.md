@@ -254,8 +254,8 @@ Build your Web3 social network:
 | Technology | Purpose |
 |------------|---------|
 | IPFS (Pinata) | Decentralized file storage |
-| Firebase | Real-time database (optional) |
-| Google Gemini | AI for OCR & pet chat |
+| Google Gemini | OCR (receipt scanning) |
+| DeepSeek | AI chat & pet chat |
 
 ---
 
@@ -356,12 +356,11 @@ NEXT_PUBLIC_SOLANA_NETWORK=devnet
 # IPFS (Pinata)
 PINATA_JWT=your_pinata_jwt_token
 
-# AI (Google Gemini)
+# AI - Gemini (OCR only)
 GEMINI_API_KEY=your_gemini_api_key
 
-# Firebase (Optional - for real-time features)
-NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
+# AI - DeepSeek (AI chat & pet chat)
+DEEPSEEK_API_KEY=your_deepseek_api_key
 ```
 
 ### Run Development Server
