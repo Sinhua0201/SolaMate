@@ -9,10 +9,10 @@
 </p>
 
 <p align="center">
-  <a href="https://solamate.vercel.app">🌐 Live Demo</a> •
-  <a href="https://www.youtube.com/watch?v=YOUR_VIDEO_ID">📺 Video Demo</a> •
-  <a href="https://twitter.com/solamate_app">🐦 Twitter</a> •
-  <a href="https://discord.gg/solamate">💬 Discord</a>
+  <a href="#live-demo">Live Demo</a> •
+  <a href="#features">Features</a> •
+  <a href="#tech-stack">Tech Stack</a> •
+  <a href="#getting-started">Getting Started</a>
 </p>
 
 <p align="center">
@@ -25,11 +25,24 @@
 
 ---
 
-## 🎬 Demo
+## 📖 Project Overview
 
-<p align="center">
-  <img src="https://your-image-host.com/demo-hero.gif" alt="SolaMate Demo" width="800" />
-</p>
+**SolaMate** is a next-generation Web3 social finance platform built on the **Solana blockchain**. Users can send crypto with natural language, chat on-chain, track expenses, split bills, and raise funds — all with an AI assistant and a virtual pet companion.
+
+Experience the future of social finance with the power of Web3 technology!
+
+---
+
+## 🎬 Live Demo
+
+| Platform | Link |
+|----------|------|
+| 🎥 **YouTube Demo** | [Watch Demo Video](https://www.youtube.com/watch?v=YOUR_VIDEO_ID) |
+| 🌐 **Live Web App** | [Try SolaMate](https://solamate.vercel.app) |
+
+---
+
+## 📸 Screenshots
 
 | AI Transfer | Pet Companion | Bill Splitting |
 |:-----------:|:-------------:|:--------------:|
