@@ -84,7 +84,7 @@ const allMessages = [
     {
       id: 3,
       type: "user",
-      text: "Send $20 to @wong neng horng",
+      text: "Send 0.2 SOL to @wong neng horng",
       timestamp: "2:34 PM",
     },
     {
@@ -94,7 +94,7 @@ const allMessages = [
       timestamp: "2:34 PM",
       showCategorySelection: true, // 显示分类选择
       transferData: {
-        amount: 20,
+        amount: 0.1,
         friend: { username: "wong neng horng", displayName: "wong neng horng" },
         reason: "Transfer",
       },
@@ -106,7 +106,7 @@ const allMessages = [
       timestamp: "2:34 PM",
       showConfirmation: true, // 显示确认按钮
       transferData: {
-        amount: 20,
+        amount: 0.1,
         friend: { username: "wong neng horng", displayName: "wong neng horng" },
         reason: "Transfer",
         category: "Travel",
@@ -115,7 +115,7 @@ const allMessages = [
     {
       id: 6,
       type: "bot",
-      text: "✅ Transfer completed successfully! 20 USDC sent to @wong neng horng.",
+      text: "✅ Transfer completed successfully! 0.2 SOL sent to @wong neng horng.",
       timestamp: "2:35 PM",
     },
     {
@@ -139,9 +139,9 @@ const allMessages = [
     showBillSummary: true, // 显示 Bill Summary UI
     billData: {
       title: "Dinner",
-      total: 115,
+      total: 0.15,
       members: ["wong neng horng", "sinhua0201"],
-      perPerson: 57.5,
+      perPerson: 0.575,
     },
   },
   {
@@ -178,7 +178,7 @@ const allMessages = [
     showFundingSuccess: true, // 显示成功消息
     fundData: {
       title: "Community Scholarship",
-      amount: 100,
+      amount: 0.1,
       deadline: "2025-12-31",
     },
   },
@@ -305,19 +305,19 @@ export function ChatDemo() {
   }, [currentIndex, scrollToBottom]); // Include scrollToBottom in deps
 
   return (
-    <Card className="w-full max-w-md mx-auto bg-neutral-900/50 border-neutral-700/50 backdrop-blur-lg relative overflow-hidden mb-4">
-      {/* Border Beam Effects - Dual animated beams */}
+    <Card className="w-full max-w-md mx-auto bg-white/80 border-neutral-200/50 backdrop-blur-xl relative overflow-hidden mb-4 shadow-2xl shadow-purple-500/10">
+      {/* Border Beam Effects - Dual animated beams with lighter colors */}
       <BorderBeam 
         duration={6}
         size={400}
-        className="from-transparent via-neutral-500 to-transparent"
+        className="from-transparent via-purple-400 to-transparent"
       />
       <BorderBeam 
         duration={6}
         delay={3}
         size={400}
         borderWidth={2}
-        className="from-transparent via-neutral-600 to-transparent"
+        className="from-transparent via-cyan-400 to-transparent"
       />
       
       {/* Chat Messages - Scrollable area for mobile */}
@@ -334,12 +334,12 @@ export function ChatDemo() {
               {message.type === "user" && (
                 <div className="flex justify-end">
                   <div className="max-w-[80%]">
-                    <div className="bg-neutral-600 text-white rounded-2xl rounded-tr-md px-4 py-2.5 border border-neutral-500/30">
+                    <div className="bg-gradient-to-br from-purple-500 to-cyan-500 text-white rounded-2xl rounded-tr-md px-4 py-2.5 shadow-lg shadow-purple-500/20">
                       <p className="text-sm">
                         <HighlightedText text={message.text} />
                       </p>
                     </div>
-                    <p className="text-xs text-neutral-500 mt-1 text-right">{message.timestamp}</p>
+                    <p className="text-xs text-neutral-400 mt-1 text-right">{message.timestamp}</p>
                   </div>
                 </div>
               )}
@@ -351,13 +351,13 @@ export function ChatDemo() {
                     {/* Clickable CTA message for the last message */}
                     {message.id === 16 ? (
                       <div>
-                        <div className="bg-neutral-800 text-neutral-100 rounded-2xl rounded-tl-md px-4 py-2.5">
+                        <div className="bg-gradient-to-br from-neutral-50 to-neutral-100 text-neutral-800 rounded-2xl rounded-tl-md px-4 py-2.5 border border-neutral-200 shadow-md">
                           <p className="text-sm mb-3">{message.text}</p>
                           <Link href="/chat">
                             <PulsatingButton 
-                              pulseColor="rgba(255, 255, 255, 0.3)"
+                              pulseColor="rgba(124, 58, 237, 0.3)"
                               duration="2s"
-                              className="w-full bg-white hover:bg-gray-100 text-black transition-colors font-bold"
+                              className="w-full bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600 text-white transition-colors font-bold shadow-lg shadow-purple-500/30"
                             >
                               Try it Now →
                             </PulsatingButton>
@@ -366,31 +366,31 @@ export function ChatDemo() {
                       </div>
                     ) : message.showWelcome ? (
                       /* Welcome message with feature list */
-                      <div className="bg-neutral-800 text-neutral-100 rounded-2xl rounded-tl-md px-4 py-3">
+                      <div className="bg-gradient-to-br from-neutral-50 to-neutral-100 text-neutral-800 rounded-2xl rounded-tl-md px-4 py-3 border border-neutral-200 shadow-md">
                         <p className="text-sm mb-3">
                           <HighlightedText text={message.text} />
                         </p>
                         <div className="space-y-1.5 text-sm">
-                          <p>💸 Send USDC: <span className="text-neutral-400">&quot;send 10 USDC to @username&quot;</span></p>
-                          <p>🎯 Create Fund: <span className="text-neutral-400">&quot;create fund&quot;</span></p>
-                          <p>📝 Split Bill: <span className="text-neutral-400">&quot;create bill @alice @bob 20 USDC dinner&quot;</span></p>
+                          <p>💸 Send SOL: <span className="text-neutral-500">&quot;send 0.1 SOL to @username&quot;</span></p>
+                          <p>🎯 Create Fund: <span className="text-neutral-500">&quot;create fund&quot;</span></p>
+                          <p>📝 Split Bill: <span className="text-neutral-500">&quot;create bill @alice @bob 0.2 SOL dinner&quot;</span></p>
                         </div>
-                        <p className="text-sm mt-3 text-neutral-300">What would you like to do?</p>
+                        <p className="text-sm mt-3 text-neutral-700">What would you like to do?</p>
                       </div>
                     ) : message.showCategorySelection ? (
                       /* Category Selection UI - like chat-window */
-                      <div className="bg-neutral-800 text-neutral-100 rounded-2xl rounded-tl-md px-4 py-3">
+                      <div className="bg-gradient-to-br from-neutral-50 to-neutral-100 text-neutral-800 rounded-2xl rounded-tl-md px-4 py-3 border border-neutral-200 shadow-md">
                         <p className="text-sm mb-3">
                           <HighlightedText text={message.text} />
                         </p>
-                        <div className="bg-neutral-900/50 rounded-xl p-3 border border-neutral-700">
-                          <p className="text-xs text-neutral-400 mb-2">💰 Transfer Request</p>
-                          <p className="text-sm font-medium">Amount: {message.transferData?.amount} USDC</p>
+                        <div className="bg-white rounded-xl p-3 border border-neutral-200 shadow-sm">
+                          <p className="text-xs text-neutral-500 mb-2">💰 Transfer Request</p>
+                          <p className="text-sm font-medium">Amount: {message.transferData?.amount} SOL</p>
                           <p className="text-sm">To: @{message.transferData?.friend?.username}</p>
-                          <p className="text-xs text-neutral-400 mt-3 mb-2">Select a category:</p>
+                          <p className="text-xs text-neutral-500 mt-3 mb-2">Select a category:</p>
                           <div className="grid grid-cols-4 gap-2">
                             {['🍽️', '🛍️', '🎮', '✈️', '🎁', '📄', '📦'].map((emoji, i) => (
-                              <button key={i} className="p-2 bg-neutral-700/50 hover:bg-neutral-600/50 rounded-lg text-lg transition-colors">
+                              <button key={i} className="p-2 bg-neutral-100 hover:bg-neutral-200 rounded-lg text-lg transition-colors">
                                 {emoji}
                               </button>
                             ))}
@@ -399,113 +399,113 @@ export function ChatDemo() {
                       </div>
                     ) : message.showConfirmation ? (
                       /* Confirmation UI with buttons */
-                      <div className="bg-neutral-800 text-neutral-100 rounded-2xl rounded-tl-md px-4 py-3">
+                      <div className="bg-gradient-to-br from-neutral-50 to-neutral-100 text-neutral-800 rounded-2xl rounded-tl-md px-4 py-3 border border-neutral-200 shadow-md">
                         <p className="text-sm mb-3">
                           <HighlightedText text={message.text} />
                         </p>
-                        <div className="bg-neutral-900/50 rounded-xl p-3 border border-neutral-700 mb-3">
-                          <p className="text-xs text-neutral-400 mb-2">💰 Transfer Summary</p>
-                          <p className="text-sm">Amount: {message.transferData?.amount} USDC</p>
+                        <div className="bg-white rounded-xl p-3 border border-neutral-200 shadow-sm mb-3">
+                          <p className="text-xs text-neutral-500 mb-2">💰 Transfer Summary</p>
+                          <p className="text-sm">Amount: {message.transferData?.amount} SOL</p>
                           <p className="text-sm">To: @{message.transferData?.friend?.username}</p>
                           <p className="text-sm">Category: ✈️ Travel</p>
                         </div>
                         <div className="flex gap-2">
-                          <button className="flex-1 py-2 bg-green-500 hover:bg-green-600 text-white rounded-xl text-sm font-medium transition-colors">
+                          <button className="flex-1 py-2 bg-green-500 hover:bg-green-600 text-white rounded-xl text-sm font-medium transition-colors shadow-md shadow-green-500/30">
                             ✓ Confirm
                           </button>
-                          <button className="flex-1 py-2 bg-neutral-700 hover:bg-neutral-600 text-white rounded-xl text-sm font-medium transition-colors">
+                          <button className="flex-1 py-2 bg-neutral-200 hover:bg-neutral-300 text-neutral-700 rounded-xl text-sm font-medium transition-colors">
                             ✕ Cancel
                           </button>
                         </div>
                       </div>
                     ) : message.showSplitBill ? (
                       /* Split Bill UI */
-                      <div className="bg-neutral-800 text-neutral-100 rounded-2xl rounded-tl-md px-4 py-3">
+                      <div className="bg-gradient-to-br from-neutral-50 to-neutral-100 text-neutral-800 rounded-2xl rounded-tl-md px-4 py-3 border border-neutral-200 shadow-md">
                         <p className="text-sm font-medium mb-2">
                           <HighlightedText text={message.text} />
                         </p>
-                        <p className="text-sm text-neutral-300 mb-1">You want to split expenses with friends.</p>
-                        <p className="text-sm text-neutral-400 mb-3">Click &quot;Create Bill&quot; to select friends and set the amount!</p>
+                        <p className="text-sm text-neutral-700 mb-1">You want to split expenses with friends.</p>
+                        <p className="text-sm text-neutral-500 mb-3">Click &quot;Create Bill&quot; to select friends and set the amount!</p>
                         <div className="flex gap-2">
-                          <button className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-xl text-sm font-medium transition-colors">
+                          <button className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-xl text-sm font-medium transition-colors shadow-md shadow-blue-500/30">
                             📝 Create Bill
                           </button>
-                          <button className="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 text-white rounded-xl text-sm font-medium transition-colors">
+                          <button className="px-4 py-2 bg-neutral-200 hover:bg-neutral-300 text-neutral-700 rounded-xl text-sm font-medium transition-colors">
                             ✕ Cancel
                           </button>
                         </div>
                       </div>
                     ) : message.showCreateFund ? (
                       /* Create Fund UI */
-                      <div className="bg-neutral-800 text-neutral-100 rounded-2xl rounded-tl-md px-4 py-3">
+                      <div className="bg-gradient-to-br from-neutral-50 to-neutral-100 text-neutral-800 rounded-2xl rounded-tl-md px-4 py-3 border border-neutral-200 shadow-md">
                         <p className="text-sm font-medium mb-2">
                           <HighlightedText text={message.text} />
                         </p>
-                        <p className="text-sm text-neutral-300 mb-1">You want to create a funding pool that others can apply to.</p>
-                        <p className="text-sm text-neutral-400 mb-3">Click &quot;Create Fund&quot; to set up your event!</p>
+                        <p className="text-sm text-neutral-700 mb-1">You want to create a funding pool that others can apply to.</p>
+                        <p className="text-sm text-neutral-500 mb-3">Click &quot;Create Fund&quot; to set up your event!</p>
                         <div className="flex gap-2">
-                          <button className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-xl text-sm font-medium transition-colors">
+                          <button className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-xl text-sm font-medium transition-colors shadow-md shadow-purple-500/30">
                             🎯 Create Fund
                           </button>
-                          <button className="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 text-white rounded-xl text-sm font-medium transition-colors">
+                          <button className="px-4 py-2 bg-neutral-200 hover:bg-neutral-300 text-neutral-700 rounded-xl text-sm font-medium transition-colors">
                             ✕ Cancel
                           </button>
                         </div>
                       </div>
                     ) : message.showFundingForm ? (
                       /* Funding Event Form UI */
-                      <div className="bg-neutral-800 text-neutral-100 rounded-2xl rounded-tl-md overflow-hidden w-80">
+                      <div className="bg-gradient-to-br from-neutral-50 to-neutral-100 text-neutral-800 rounded-2xl rounded-tl-md overflow-hidden w-80 border border-neutral-200 shadow-lg">
                         {/* Header */}
                         <div className="bg-gradient-to-r from-purple-500 to-cyan-500 px-4 py-3">
-                          <p className="text-sm font-bold">Create Funding Event</p>
-                          <p className="text-xs text-white/70">Set up a new funding pool</p>
+                          <p className="text-sm font-bold text-white">Create Funding Event</p>
+                          <p className="text-xs text-white/80">Set up a new funding pool</p>
                         </div>
                         {/* Form */}
                         <div className="p-4 space-y-3">
                           <div>
-                            <p className="text-xs text-neutral-400 mb-1">📋 Event Title</p>
-                            <div className="bg-neutral-700/50 rounded-lg px-3 py-2 text-sm text-neutral-400">e.g., Community Scholarship</div>
+                            <p className="text-xs text-neutral-600 mb-1">📋 Event Title</p>
+                            <div className="bg-white border border-neutral-200 rounded-lg px-3 py-2 text-sm text-neutral-500">e.g., Community Scholarship</div>
                           </div>
                           <div>
-                            <p className="text-xs text-neutral-400 mb-1">Description</p>
-                            <div className="bg-neutral-700/50 rounded-lg px-3 py-2 text-sm text-neutral-400 h-12">Describe the purpose...</div>
+                            <p className="text-xs text-neutral-600 mb-1">Description</p>
+                            <div className="bg-white border border-neutral-200 rounded-lg px-3 py-2 text-sm text-neutral-500 h-12">Describe the purpose...</div>
                           </div>
                           <div className="grid grid-cols-2 gap-2">
                             <div>
-                              <p className="text-xs text-neutral-400 mb-1">💰 Amount (USDC)</p>
-                              <div className="bg-neutral-700/50 rounded-lg px-3 py-2 text-sm text-neutral-400">0.00</div>
+                              <p className="text-xs text-neutral-600 mb-1">💰 Amount (SOL)</p>
+                              <div className="bg-white border border-neutral-200 rounded-lg px-3 py-2 text-sm text-neutral-500">0.00</div>
                             </div>
                             <div>
-                              <p className="text-xs text-neutral-400 mb-1">📅 Deadline</p>
-                              <div className="bg-neutral-700/50 rounded-lg px-3 py-2 text-sm text-neutral-400">mm/dd/yyyy</div>
+                              <p className="text-xs text-neutral-600 mb-1">📅 Deadline</p>
+                              <div className="bg-white border border-neutral-200 rounded-lg px-3 py-2 text-sm text-neutral-500">mm/dd/yyyy</div>
                             </div>
                           </div>
                           <div className="flex gap-2 pt-2">
-                            <button className="flex-1 py-2 bg-neutral-700 hover:bg-neutral-600 text-white rounded-xl text-sm font-medium transition-colors">Cancel</button>
-                            <button className="flex-1 py-2 bg-gradient-to-r from-purple-500 to-cyan-500 text-white rounded-xl text-sm font-medium transition-colors">Create Event</button>
+                            <button className="flex-1 py-2 bg-neutral-200 hover:bg-neutral-300 text-neutral-700 rounded-xl text-sm font-medium transition-colors">Cancel</button>
+                            <button className="flex-1 py-2 bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600 text-white rounded-xl text-sm font-medium transition-colors shadow-md shadow-purple-500/30">Create Event</button>
                           </div>
                         </div>
                       </div>
                     ) : message.showFundingSuccess ? (
                       /* Funding Success UI */
-                      <div className="bg-neutral-800 text-neutral-100 rounded-2xl rounded-tl-md px-4 py-3">
+                      <div className="bg-gradient-to-br from-neutral-50 to-neutral-100 text-neutral-800 rounded-2xl rounded-tl-md px-4 py-3 border border-neutral-200 shadow-md">
                         <p className="text-sm font-medium mb-3">
                           <HighlightedText text={message.text} />
                         </p>
                         <div className="space-y-1 text-sm">
                           <p>📋 {message.fundData?.title}</p>
-                          <p>💰 {message.fundData?.amount} USDC</p>
+                          <p>💰 {message.fundData?.amount} SOL</p>
                           <p>📅 Deadline: {message.fundData?.deadline}</p>
                         </div>
-                        <p className="text-sm text-neutral-400 mt-3">Go to Funding &gt; Manage Events to view applications.</p>
+                        <p className="text-sm text-neutral-500 mt-3">Go to Funding &gt; Manage Events to view applications.</p>
                       </div>
                     ) : message.showBillSummary ? (
                       /* Bill Summary UI - like the modal */
-                      <div className="bg-neutral-800 text-neutral-100 rounded-2xl rounded-tl-md overflow-hidden w-80">
+                      <div className="bg-gradient-to-br from-neutral-50 to-neutral-100 text-neutral-800 rounded-2xl rounded-tl-md overflow-hidden w-80 border border-neutral-200 shadow-lg">
                         {/* Header */}
                         <div className="bg-gradient-to-r from-purple-500 to-blue-500 px-4 py-3">
-                          <p className="text-sm font-bold">✨ Create New Bill</p>
-                          <p className="text-xs text-white/70">Split expenses with friends</p>
+                          <p className="text-sm font-bold text-white">✨ Create New Bill</p>
+                          <p className="text-xs text-white/80">Split expenses with friends</p>
                           {/* Step indicator */}
                           <div className="flex items-center gap-2 mt-2">
                             <div className="w-5 h-5 rounded-full bg-white text-purple-600 flex items-center justify-center text-xs font-bold">✓</div>
@@ -517,19 +517,19 @@ export function ChatDemo() {
                         </div>
                         {/* Content */}
                         <div className="p-4">
-                          <div className="bg-neutral-900/50 rounded-xl p-3 border border-neutral-700 mb-3">
-                            <p className="text-xs text-neutral-400 mb-2">✨ Bill Summary</p>
+                          <div className="bg-white rounded-xl p-3 border border-neutral-200 shadow-sm mb-3">
+                            <p className="text-xs text-neutral-500 mb-2">✨ Bill Summary</p>
                             <div className="space-y-2 text-sm">
-                              <div className="flex justify-between"><span className="text-neutral-400">Title</span><span className="font-medium">{message.billData?.title}</span></div>
-                              <div className="flex justify-between"><span className="text-neutral-400">Total</span><span className="font-bold text-purple-400">{message.billData?.total} USDC</span></div>
-                              <div className="flex justify-between"><span className="text-neutral-400">Members</span><span>{message.billData?.members?.length}</span></div>
-                              <div className="border-t border-neutral-700 pt-2 flex justify-between"><span className="text-neutral-400">Per Person</span><span className="font-bold text-purple-400">{message.billData?.perPerson} USDC</span></div>
+                              <div className="flex justify-between"><span className="text-neutral-500">Title</span><span className="font-medium">{message.billData?.title}</span></div>
+                              <div className="flex justify-between"><span className="text-neutral-500">Total</span><span className="font-bold text-purple-600">{message.billData?.total} SOL</span></div>
+                              <div className="flex justify-between"><span className="text-neutral-500">Members</span><span>{message.billData?.members?.length}</span></div>
+                              <div className="border-t border-neutral-200 pt-2 flex justify-between"><span className="text-neutral-500">Per Person</span><span className="font-bold text-purple-600">{message.billData?.perPerson} SOL</span></div>
                             </div>
                           </div>
                           {/* Members */}
                           <div className="flex gap-2 mb-3">
                             {message.billData?.members?.map((m, i) => (
-                              <div key={i} className="flex items-center gap-1.5 bg-neutral-700/50 px-2 py-1 rounded-full text-xs">
+                              <div key={i} className="flex items-center gap-1.5 bg-neutral-100 px-2 py-1 rounded-full text-xs border border-neutral-200">
                                 <div className="w-4 h-4 rounded-full bg-gradient-to-br from-purple-500 to-blue-500" />
                                 <span>{m}</span>
                               </div>
@@ -537,87 +537,87 @@ export function ChatDemo() {
                           </div>
                           {/* Buttons */}
                           <div className="flex gap-2">
-                            <button className="flex-1 py-2 bg-neutral-700 hover:bg-neutral-600 text-white rounded-xl text-sm font-medium transition-colors">
+                            <button className="flex-1 py-2 bg-neutral-200 hover:bg-neutral-300 text-neutral-700 rounded-xl text-sm font-medium transition-colors">
                               Back
                             </button>
-                            <button className="flex-1 py-2 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white rounded-xl text-sm font-medium transition-colors">
+                            <button className="flex-1 py-2 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white rounded-xl text-sm font-medium transition-colors shadow-md shadow-purple-500/30">
                               🎉 Create Bill
                             </button>
                           </div>
                         </div>
                       </div>
                     ) : (
-                      <div className="bg-neutral-800 text-neutral-100 rounded-2xl rounded-tl-md px-4 py-2.5">
+                      <div className="bg-gradient-to-br from-neutral-50 to-neutral-100 text-neutral-800 rounded-2xl rounded-tl-md px-4 py-2.5 border border-neutral-200 shadow-md">
                         <p className="text-sm">
                           <HighlightedText text={message.text} />
                         </p>
                         
                         {/* Intent Details Card */}
                         {message.intent && (
-                          <div className="mt-3 bg-neutral-900/50 rounded-lg p-3 space-y-2 border border-neutral-700">
+                          <div className="mt-3 bg-white rounded-lg p-3 space-y-2 border border-neutral-200 shadow-sm">
                           <div className="flex items-center justify-between text-xs">
-                            <span className="text-neutral-400">Action</span>
-                            <span className="text-white font-medium">{message.intent.action}</span>
+                            <span className="text-neutral-500">Action</span>
+                            <span className="text-neutral-800 font-medium">{message.intent.action}</span>
                           </div>
                           {message.intent.amount && (
                             <div className="flex items-center justify-between text-xs">
-                              <span className="text-neutral-400">Amount</span>
-                              <span className="text-white font-medium">{message.intent.amount}</span>
+                              <span className="text-neutral-500">Amount</span>
+                              <span className="text-neutral-800 font-medium">{message.intent.amount}</span>
                             </div>
                           )}
                           {message.intent.recipient && (
                             <div className="flex items-center justify-between text-xs">
-                              <span className="text-neutral-400">To</span>
-                              <span className="text-white font-mono text-[10px]">{message.intent.recipient}</span>
+                              <span className="text-neutral-500">To</span>
+                              <span className="text-neutral-800 font-mono text-[10px]">{message.intent.recipient}</span>
                             </div>
                           )}
                           {message.intent.from && (
                             <div className="flex items-center justify-between text-xs">
-                              <span className="text-neutral-400">From</span>
-                              <span className="text-white font-medium">{message.intent.from}</span>
+                              <span className="text-neutral-500">From</span>
+                              <span className="text-neutral-800 font-medium">{message.intent.from}</span>
                             </div>
                           )}
                           {message.intent.to && (
                             <div className="flex items-center justify-between text-xs">
-                              <span className="text-neutral-400">To</span>
-                              <span className="text-white font-medium">{message.intent.to}</span>
+                              <span className="text-neutral-500">To</span>
+                              <span className="text-neutral-800 font-medium">{message.intent.to}</span>
                             </div>
                           )}
                           {message.intent.route && (
                             <div className="flex items-center justify-between text-xs">
-                              <span className="text-neutral-400">Route</span>
-                              <span className="text-white font-medium">{message.intent.route}</span>
+                              <span className="text-neutral-500">Route</span>
+                              <span className="text-neutral-800 font-medium">{message.intent.route}</span>
                             </div>
                           )}
                           {message.intent.estimatedFee && (
                             <div className="flex items-center justify-between text-xs">
-                              <span className="text-neutral-400">Est. Fee</span>
-                              <span className="text-neutral-300">{message.intent.estimatedFee}</span>
+                              <span className="text-neutral-500">Est. Fee</span>
+                              <span className="text-neutral-700">{message.intent.estimatedFee}</span>
                             </div>
                           )}
                           {message.intent.slippage && (
                             <div className="flex items-center justify-between text-xs">
-                              <span className="text-neutral-400">Slippage</span>
-                              <span className="text-neutral-300">{message.intent.slippage}</span>
+                              <span className="text-neutral-500">Slippage</span>
+                              <span className="text-neutral-700">{message.intent.slippage}</span>
                             </div>
                           )}
                           {message.intent.status && (
                             <div className="flex items-center justify-between text-xs">
-                              <span className="text-neutral-400">Status</span>
-                              <span className="text-white font-medium">{message.intent.status}</span>
+                              <span className="text-neutral-500">Status</span>
+                              <span className="text-neutral-800 font-medium">{message.intent.status}</span>
                             </div>
                           )}
                           {message.intent.txId && (
                             <div className="flex items-center justify-between text-xs">
-                              <span className="text-neutral-400">Transaction ID</span>
-                              <span className="text-blue-400 font-mono text-[10px]">{message.intent.txId}</span>
+                              <span className="text-neutral-500">Transaction ID</span>
+                              <span className="text-blue-600 font-mono text-[10px]">{message.intent.txId}</span>
                             </div>
                           )}
                           </div>
                         )}
                       </div>
                     )}
-                    <p className="text-xs text-neutral-500 mt-1">{message.timestamp}</p>
+                    <p className="text-xs text-neutral-400 mt-1">{message.timestamp}</p>
                   </div>
                 </div>
               )}
@@ -625,9 +625,9 @@ export function ChatDemo() {
               {/* System/Processing Messages */}
               {message.type === "system" && (
                 <div className="flex justify-center">
-                  <div className="bg-neutral-800/50 rounded-full px-4 py-1.5 flex items-center gap-2">
-                    <Clock className="h-3 w-3 text-white animate-pulse" />
-                    <p className="text-xs text-neutral-400">{message.text}</p>
+                  <div className="bg-neutral-100 rounded-full px-4 py-1.5 flex items-center gap-2 border border-neutral-200">
+                    <Clock className="h-3 w-3 text-neutral-600 animate-pulse" />
+                    <p className="text-xs text-neutral-600">{message.text}</p>
                   </div>
                 </div>
               )}
@@ -646,14 +646,14 @@ export function ChatDemo() {
                 <div className="max-w-[85%]">
                   {/* Show clickable style for last message while typing */}
                   {typingMessageId === 16 ? (
-                    <div className="bg-neutral-800 text-neutral-100 rounded-2xl rounded-tl-md px-4 py-2.5">
+                    <div className="bg-gradient-to-br from-neutral-50 to-neutral-100 text-neutral-800 rounded-2xl rounded-tl-md px-4 py-2.5 border border-neutral-200 shadow-md">
                       <p className="text-sm">
                         <HighlightedText text={typingText} />
                         <span className="animate-pulse">|</span>
                       </p>
                     </div>
                   ) : (
-                    <div className="bg-neutral-800 text-neutral-100 rounded-2xl rounded-tl-md px-4 py-2.5">
+                    <div className="bg-gradient-to-br from-neutral-50 to-neutral-100 text-neutral-800 rounded-2xl rounded-tl-md px-4 py-2.5 border border-neutral-200 shadow-md">
                       <p className="text-sm">
                         <HighlightedText text={typingText} />
                         <span className="animate-pulse">|</span>
@@ -668,22 +668,22 @@ export function ChatDemo() {
       </ScrollArea>
 
       {/* Chat Input - Disabled for demo */}
-      <div className="p-4 border-t border-neutral-800">
-        <div className="bg-neutral-800/50 rounded-full px-4 py-2.5 flex items-center gap-2">
+      <div className="p-4 border-t border-neutral-200">
+        <div className="bg-neutral-100 rounded-full px-4 py-2.5 flex items-center gap-2 border border-neutral-200">
           <input
             type="text"
             placeholder="Start today for free!"
             disabled
-            className="flex-1 bg-transparent text-sm text-neutral-500 outline-none cursor-not-allowed"
+            className="flex-1 bg-transparent text-sm text-neutral-400 outline-none cursor-not-allowed"
           />
           {/* Use same Send icon style as full chat page */}
           <button
             type="button"
             disabled
             aria-label="Send"
-            className="bg-neutral-700 text-white rounded-full h-10 w-10 p-0 opacity-60 cursor-not-allowed flex items-center justify-center flex-shrink-0"
+            className="bg-neutral-300 text-neutral-500 rounded-full h-10 w-10 p-0 opacity-60 cursor-not-allowed flex items-center justify-center flex-shrink-0"
           >
-            <Send className="h-5 w-5 text-white" />
+            <Send className="h-5 w-5" />
           </button>
         </div>
       </div>

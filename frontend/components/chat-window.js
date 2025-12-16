@@ -809,10 +809,11 @@ export default function ChatWindow({ selectedChat }) {
       // 显示成功消息
       const successMsg = {
         id: Date.now() + 1,
-        content: `✅ Transfer successful!\n\n${amount} SOL sent to @${friend.username}\n\nTransaction: ${signature.slice(0, 8)}...${signature.slice(-8)}\n\nView on Explorer: https://explorer.solana.com/tx/${signature}?cluster=devnet`,
+        content: `✅ Transfer successful!\n\n${amount} SOL sent to @${friend.username}\n\nTransaction: ${signature.slice(0, 8)}...${signature.slice(-8)}`,
         sender: 'ai',
         timestamp: new Date().toISOString(),
         isMine: false,
+        explorerLink: `https://explorer.solana.com/tx/${signature}?cluster=devnet`,
       };
 
       setAiMessages(prev => {
@@ -1323,6 +1324,27 @@ function MessageBubble({ message, isAI, friendAvatar, onConfirmTransfer, onCance
             }
           `}>
             <p className="break-words whitespace-pre-line">{message.content}</p>
+
+            {/* Explorer Link for successful transfers */}
+            {message.explorerLink && (
+              <a
+                href={message.explorerLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`
+                  inline-flex items-center gap-2 mt-3 px-4 py-2 rounded-xl font-medium text-sm transition-all duration-200 hover:scale-105
+                  ${isMine 
+                    ? 'bg-white/20 hover:bg-white/30 text-white border border-white/30' 
+                    : 'bg-purple-500 hover:bg-purple-600 text-white shadow-md shadow-purple-500/30'
+                  }
+                `}
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+                View on Solana Explorer
+              </a>
+            )}
 
             {/* Payment Request buttons */}
             {message.isPaymentRequest && message.paymentRequestData && (
