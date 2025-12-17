@@ -6,6 +6,14 @@ const nextConfig = {
     turbo: false,
   },
   turbopack: {},
+  // Ignore wallet rejection errors in dev overlay
+  devIndicators: {
+    buildActivity: true,
+  },
+  onDemandEntries: {
+    maxInactiveAge: 25 * 1000,
+    pagesBufferLength: 2,
+  },
   webpack: (config, { isServer }) => {
     // Fix for MetaMask SDK React Native dependencies
     if (!isServer) {

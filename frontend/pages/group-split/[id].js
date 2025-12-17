@@ -145,6 +145,13 @@ export default function GroupSplitDetailPage() {
             setRefreshKey(prev => prev + 1);
         } catch (err) {
             console.error('Payment error:', err);
+
+            // Check if user cancelled the transaction
+            if (err.message?.includes('User rejected') || err.message?.includes('rejected') || err.name === 'WalletSendTransactionError') {
+                toast.info('Transaction cancelled');
+                return;
+            }
+
             toast.error('Payment failed: ' + err.message);
         }
     };

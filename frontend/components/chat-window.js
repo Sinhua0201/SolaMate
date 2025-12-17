@@ -538,7 +538,12 @@ export default function ChatWindow({ selectedChat }) {
       };
 
       // 直接执行转账，不显示确认对话框
-      await executeTransferDirect(amount, friend);
+      try {
+        await executeTransferDirect(amount, friend);
+      } catch (err) {
+        // Error already handled in executeTransferDirect
+        console.log('Transfer handled:', err.message);
+      }
     } else {
       // 拒绝请求
       sendMessage(selectedChat.id, `Payment request for ${amount} SOL was rejected`);
@@ -568,12 +573,18 @@ export default function ChatWindow({ selectedChat }) {
       );
 
       // 发送交易
+      toast.info('📝 Sign 1/3: Transfer SOL', {
+        description: `Sending ${amount} SOL to @${friend.username}`,
+      });
       const signature = await walletSendTransaction(transaction, connection);
 
       // 等待确认
       await connection.confirmTransaction(signature, 'confirmed');
 
       // 发送成功通知给对方
+      toast.info('📝 Sign 2/3: Send notification', {
+        description: 'Notifying recipient about the transfer',
+      });
       await sendMessage(selectedChat.id, `TRANSFER_SUCCESS:${amount}:${signature}:${publicKey.toString()}`);
 
       // WebSocket 会自动更新消息
@@ -591,6 +602,9 @@ export default function ChatWindow({ selectedChat }) {
           'other': ExpenseCategory.Other,
         };
 
+        toast.info('📝 Sign 3/3: Record expense', {
+          description: 'Saving to your expense history',
+        });
         const expenseResult = await recordExpense({
           recipientAddress: friend.address,
           amount: lamports,
@@ -624,16 +638,28 @@ export default function ChatWindow({ selectedChat }) {
     } catch (err) {
       console.error('Transfer error:', err);
 
-      // 显示错误消息
-      const errorMsg = {
-        id: Date.now() + 2,
-        content: `❌ Transfer failed: ${err.message}\n\nPlease try again or check your balance.`,
-        sender: publicKey.toString(),
-        timestamp: new Date().toISOString(),
-        isMine: true,
-      };
+      // Check if user cancelled the transaction
+      const errorMessage = err?.message?.toLowerCase() || '';
+      const errorName = err?.name || '';
 
-      // WebSocket 会自动更新消息
+      if (
+        errorMessage.includes('user rejected') ||
+        errorMessage.includes('rejected') ||
+        errorMessage.includes('cancelled') ||
+        errorMessage.includes('canceled') ||
+        errorName.includes('WalletSendTransactionError')
+      ) {
+        toast.info('Transaction cancelled', {
+          description: 'You cancelled the transaction',
+        });
+        return;
+      }
+
+      // Show other error messages
+      toast.error('Transfer failed', {
+        description: err.message || 'Please try again or check your balance',
+      });
+
       refreshFriendMessages();
     }
   };
@@ -656,7 +682,12 @@ export default function ChatWindow({ selectedChat }) {
       // 发送 SOL - 直接执行转账
       if (selectedChat.type === 'friend') {
         // 好友聊天 - 直接转账，不需要确认
-        await executeTransferDirect(paymentAmount, friend);
+        try {
+          await executeTransferDirect(paymentAmount, friend);
+        } catch (err) {
+          // Error already handled in executeTransferDirect
+          console.log('Transfer handled:', err.message);
+        }
       } else {
         // AI 聊天 - 显示确认消息
         const categoryName = EXPENSE_CATEGORIES.find(c => c.id === paymentCategory)?.name || 'Other';
@@ -701,7 +732,7 @@ export default function ChatWindow({ selectedChat }) {
         toast.success('🎉 Funding event created!');
         setShowFundModal(false);
         setFundFormData({ title: '', description: '', amount: '', deadline: '' });
-        
+
         // 添加成功消息到聊天
         const successMsg = {
           id: Date.now(),
@@ -737,12 +768,12 @@ export default function ChatWindow({ selectedChat }) {
         members: selectedBillFriends.map(f => f.address),
         ipfsHash: 'QmDefault',
       });
-      
+
       toast.success('📝 Bill created!');
       setShowBillModal(false);
       setBillFormData({ title: '', amount: '' });
       setSelectedBillFriends([]);
-      
+
       const perPerson = (parseFloat(billFormData.amount) / selectedBillFriends.length).toFixed(4);
       const successMsg = {
         id: Date.now(),
@@ -762,7 +793,7 @@ export default function ChatWindow({ selectedChat }) {
   };
 
   const toggleBillFriend = (friend) => {
-    setSelectedBillFriends(prev => 
+    setSelectedBillFriends(prev =>
       prev.find(f => f.address === friend.address)
         ? prev.filter(f => f.address !== friend.address)
         : [...prev, friend]
@@ -1087,8 +1118,8 @@ export default function ChatWindow({ selectedChat }) {
                 >
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-green-500 flex items-center justify-center flex-shrink-0 shadow-md overflow-hidden">
                     {friend.avatar ? (
-                      <img 
-                        src={getAvatarPath(friend.avatar)} 
+                      <img
+                        src={getAvatarPath(friend.avatar)}
                         alt={friend.displayName}
                         className="w-full h-full object-cover"
                       />
@@ -1245,20 +1276,20 @@ export default function ChatWindow({ selectedChat }) {
               <div className="p-6 space-y-4">
                 <div>
                   <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2"><FileText className="h-4 w-4 text-purple-500" />Event Title</label>
-                  <input value={fundFormData.title} onChange={(e) => setFundFormData({...fundFormData, title: e.target.value})} placeholder="e.g., Community Scholarship" maxLength={64} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 transition-all outline-none" />
+                  <input value={fundFormData.title} onChange={(e) => setFundFormData({ ...fundFormData, title: e.target.value })} placeholder="e.g., Community Scholarship" maxLength={64} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 transition-all outline-none" />
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-700 mb-2 block">Description</label>
-                  <textarea value={fundFormData.description} onChange={(e) => setFundFormData({...fundFormData, description: e.target.value})} placeholder="Describe the purpose..." rows={2} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 transition-all outline-none resize-none" />
+                  <textarea value={fundFormData.description} onChange={(e) => setFundFormData({ ...fundFormData, description: e.target.value })} placeholder="Describe the purpose..." rows={2} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 transition-all outline-none resize-none" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2"><DollarSign className="h-4 w-4 text-purple-500" />Amount (SOL)</label>
-                    <input type="number" step="0.01" value={fundFormData.amount} onChange={(e) => setFundFormData({...fundFormData, amount: e.target.value})} placeholder="0.00" className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 transition-all outline-none" />
+                    <input type="number" step="0.01" value={fundFormData.amount} onChange={(e) => setFundFormData({ ...fundFormData, amount: e.target.value })} placeholder="0.00" className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 transition-all outline-none" />
                   </div>
                   <div>
                     <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2"><Calendar className="h-4 w-4 text-purple-500" />Deadline</label>
-                    <input type="date" value={fundFormData.deadline} onChange={(e) => setFundFormData({...fundFormData, deadline: e.target.value})} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 transition-all outline-none" />
+                    <input type="date" value={fundFormData.deadline} onChange={(e) => setFundFormData({ ...fundFormData, deadline: e.target.value })} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 transition-all outline-none" />
                   </div>
                 </div>
                 <div className="flex gap-3 pt-2">
@@ -1287,7 +1318,7 @@ function MessageBubble({ message, isAI, friendAvatar, onConfirmTransfer, onCance
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
   const isYesterday = msgDate.toDateString() === yesterday.toDateString();
-  
+
   const timeStr = msgDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
   const dateStr = isToday ? '' : isYesterday ? 'Yesterday ' : msgDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ';
   const time = dateStr + timeStr;
@@ -1333,8 +1364,8 @@ function MessageBubble({ message, isAI, friendAvatar, onConfirmTransfer, onCance
                 rel="noopener noreferrer"
                 className={`
                   inline-flex items-center gap-2 mt-3 px-4 py-2 rounded-xl font-medium text-sm transition-all duration-200 hover:scale-105
-                  ${isMine 
-                    ? 'bg-white/20 hover:bg-white/30 text-white border border-white/30' 
+                  ${isMine
+                    ? 'bg-white/20 hover:bg-white/30 text-white border border-white/30'
                     : 'bg-purple-500 hover:bg-purple-600 text-white shadow-md shadow-purple-500/30'
                   }
                 `}
