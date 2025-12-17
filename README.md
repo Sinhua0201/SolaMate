@@ -229,6 +229,58 @@ Build your Web3 social network:
 
 ---
 
+## 🏗️ System Architecture
+
+```mermaid
+flowchart TB
+    subgraph Client["🖥️ Client"]
+        Browser["Browser"]
+        Wallet["Phantom/Solflare Wallet"]
+    end
+
+    subgraph Frontend["⚛️ Frontend (Next.js)"]
+        UI["React Components"]
+        Hooks["Custom Hooks"]
+        API["API Routes"]
+    end
+
+    subgraph Blockchain["⛓️ Solana Blockchain"]
+        Program["SolaMate Program (Anchor)"]
+        subgraph Accounts["On-Chain Accounts"]
+            Profile["UserProfile"]
+            Chat["ChatRoom & Messages"]
+            Expense["ExpenseStats"]
+            Funding["FundingEvent"]
+            Split["GroupSplit"]
+        end
+    end
+
+    subgraph External["🌐 External Services"]
+        IPFS["IPFS (Pinata)"]
+        Gemini["Google Gemini"]
+        DeepSeek["DeepSeek AI"]
+        ElevenLabs["ElevenLabs"]
+    end
+
+    Browser --> UI
+    Wallet --> UI
+    UI --> Hooks
+    UI --> API
+    Hooks --> Program
+    Program --> Accounts
+    API --> IPFS
+    API --> Gemini
+    API --> DeepSeek
+    API --> ElevenLabs
+
+    Gemini -.->|"OCR"| API
+    DeepSeek -.->|"AI Chat & Pet"| API
+    ElevenLabs -.->|"Pet Voice TTS"| API
+    IPFS -.->|"File Storage"| API
+```
+
+---
+
 ## 🛠️ Tech Stack
 
 ### Frontend
@@ -255,7 +307,8 @@ Build your Web3 social network:
 |------------|---------|
 | IPFS (Pinata) | Decentralized file storage |
 | Google Gemini | OCR (receipt scanning) |
-| DeepSeek | AI chat & pet chat |
+| DeepSeek | AI chat & pet conversations |
+| ElevenLabs | Text-to-speech (pet voice) |
 
 ---
 
@@ -361,6 +414,10 @@ GEMINI_API_KEY=your_gemini_api_key
 
 # AI - DeepSeek (AI chat & pet chat)
 DEEPSEEK_API_KEY=your_deepseek_api_key
+
+# TTS - ElevenLabs (pet voice)
+ELEVENLABS_API_KEY=your_elevenlabs_api_key
+ELEVENLABS_VOICE_ID=your_elevenlabs_voice_id
 ```
 
 ### Run Development Server
