@@ -38,7 +38,7 @@ Experience the future of social finance with the power of Web3 technology!
 | Platform | Link |
 |----------|------|
 | 🎥 **YouTube Demo** | [Watch Demo Video](https://www.youtube.com/watch?v=YOUR_VIDEO_ID) |
-| 🌐 **Live Web App** | [Try SolaMate](https://solamate.vercel.app) |
+| 🌐 **Live Web App** | [Try SolaMate](https://sola-mate.vercel.app) |
 
 ---
 
@@ -75,8 +75,8 @@ Transform how you interact with blockchain. Just type or speak naturally:
 
 ```
 "Send 2 SOL to @Alice for coffee"
-"Transfer 0.5 SOL to @Bob for lunch"
-"Create bill @Alice @Bob 3 SOL dinner"
+"Create Fund"
+"Split Bill"
 ```
 
 **Key Features:**
@@ -170,12 +170,12 @@ Automatic on-chain expense recording with powerful analytics:
 Split expenses with friends effortlessly:
 
 ```
-AI Command: "Create bill @Alice @Bob @Charlie 10 SOL team dinner"
+AI Command: "Create bill"
 ```
 
 **Features:**
 - 👑 Create bills as the organizer
-- � Tragck who has paid
+- � Track who has paid
 - 📊 Visual payment progress
 - 🔔 Payment reminders
 - ✅ Automatic settlement detection
@@ -549,10 +549,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Contact
 
-- **Website**: [https://solamate.vercel.app](https://solamate.vercel.app)
-- **Twitter**: [@solamate_app](https://twitter.com/solamate_app)
-- **Discord**: [Join our server](https://discord.gg/solamate)
-- **Email**: team@solamate.app
+- **Website**: [https://sola-mate.vercel.app](https://sola-mate.vercel.app)
+- **Email**: wongnenghong@gmail.com
 
 ---
 
@@ -561,7 +559,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 </p>
 
 <p align="center">
-  <a href="https://solamate.vercel.app">
+  <a href="https://sola-mate.vercel.app">
     <img src="https://img.shields.io/badge/Try%20SolaMate-Live%20Demo-9945FF?style=for-the-badge" alt="Try Demo" />
   </a>
 </p>
