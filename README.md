@@ -188,7 +188,7 @@ AI Command: "Create bill"
 
 <details>
 <summary>📸 Screenshot</summary>
-<img src="frontend/public/data/billstracking.png" alt="Bills" width="600" />
+<img src="frontend/public/data/billsplitting.png" alt="Bills" width="600" />
 </details>
 
 ---
