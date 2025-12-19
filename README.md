@@ -37,7 +37,7 @@ Experience the future of social finance with the power of Web3 technology!
 
 | Platform | Link |
 |----------|------|
-| 🎥 **YouTube Demo** | [Watch Demo Video](https://www.youtube.com/watch?v=YOUR_VIDEO_ID) |
+| 🎥 **YouTube Demo** | [Watch Demo Video](https://youtu.be/AoKYaIo-KNU?si=uG7mHs85uApnCS0y) |
 | 🌐 **Live Web App** | [Try SolaMate](https://sola-mate.vercel.app) |
 
 ---
