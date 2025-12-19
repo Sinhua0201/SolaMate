@@ -46,11 +46,11 @@ Experience the future of social finance with the power of Web3 technology!
 
 | AI Transfer | Pet Companion | Bill Splitting |
 |:-----------:|:-------------:|:--------------:|
-| ![AI Transfer](frontend/public/data/demo-ai-transfer.png) | ![Pet](frontend/public/data/demo-pet.png) | ![Bills](frontend/public/data/demo-bills.png) |
+| ![AI Transfer](frontend/public/data/aitransfer.png) | ![Pet](frontend/public/data/petcompanion.png) | ![Bills](frontend/public/data/billsplitting.png) |
 
 | On-Chain Chat | Expense Tracking | Funding Events |
 |:-------------:|:----------------:|:--------------:|
-| ![Chat](frontend/public/data/demo-chat.png) | ![Expenses](frontend/public/data/demo-expenses.png) | ![Funding](frontend/public/data/demo-funding.png) |
+| ![Chat](frontend/public/data/onchain-chat.png) | ![Expenses](frontend/public/data/expensetracking.png) | ![Funding](frontend/public/data/fundingevent.png) |
 
 ---
 
@@ -88,7 +88,7 @@ Transform how you interact with blockchain. Just type or speak naturally:
 
 <details>
 <summary>📸 Screenshot</summary>
-<img src="frontend/public/data/feature-ai-assistant.png" alt="AI Assistant" width="600" />
+<img src="frontend/public/data/aitransfer.png" alt="AI Assistant" width="600" />
 </details>
 
 ---
@@ -105,7 +105,7 @@ Secure, decentralized messaging stored directly on Solana:
 
 <details>
 <summary>📸 Screenshot</summary>
-<img src="frontend/public/data/feature-chat.png" alt="Chat" width="600" />
+<img src="frontend/public/data/onchain-chat.png" alt="Chat" width="600" />
 </details>
 
 ---
@@ -137,7 +137,7 @@ Your loyal companion on your Web3 journey:
 
 <details>
 <summary>📸 Screenshot</summary>
-<img src="frontend/public/data/feature-pets.png" alt="Pets" width="600" />
+<img src="frontend/public/data/petcompanion.png" alt="Pets" width="600" />
 </details>
 
 ---
@@ -160,7 +160,7 @@ Automatic on-chain expense recording with powerful analytics:
 
 <details>
 <summary>📸 Screenshot</summary>
-<img src="frontend/public/data/feature-expenses.png" alt="Expenses" width="600" />
+<img src="frontend/public/data/expensetracking.png" alt="Expenses" width="600" />
 </details>
 
 ---
@@ -188,7 +188,7 @@ AI Command: "Create bill"
 
 <details>
 <summary>📸 Screenshot</summary>
-<img src="frontend/public/data/feature-bills.png" alt="Bills" width="600" />
+<img src="frontend/public/data/billstracking.png" alt="Bills" width="600" />
 </details>
 
 ---
@@ -212,7 +212,7 @@ Create and manage funding pools:
 
 <details>
 <summary>📸 Screenshot</summary>
-<img src="frontend/public/data/feature-funding.png" alt="Funding" width="600" />
+<img src="frontend/public/data/fundingevent.png" alt="Funding" width="600" />
 </details>
 
 ---
@@ -386,7 +386,7 @@ solamate/
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/YOUR_USERNAME/solamate.git
+git clone https://github.com/Sinhua0201/SolaMate.git
 cd solamate
 
 # 2. Install dependencies
